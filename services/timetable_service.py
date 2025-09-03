@@ -7,6 +7,8 @@ from typing import Dict, Any, List
 import logging
 from datetime import datetime, time, timedelta, date
 from bson import ObjectId
+from fastapi import HTTPException
+
 
 from pydantic import ValidationError
 
@@ -19,7 +21,10 @@ from services.db_operations.timetable_db import (
     get_events_for_teacher_class_day,
     pair_lesson_to_event,
     save_pdf_timetable_in_db,
-    get_teachers_from_institution
+    get_teachers_from_institution,
+    get_timetable_event_by_id,
+    update_timetable_event_status,
+    move_session_to_completed
 )
 
 # Configure logging
@@ -37,13 +42,14 @@ except Exception as e:
     # You might want to handle this more gracefully, but for now, we log and proceed.
     # The app will fail later if a call to Gemini is made.
 
-def store_timetable_pdf(pdf_meta: PDFTimetable, pdf_content: bytes) -> str:
+
+async def store_timetable_pdf(pdf_meta: PDFTimetable, pdf_content: bytes) -> str:
     """
     Encodes a PDF and saves it to the database along with its metadata.
     """
     encoded_pdf = base64.b64encode(pdf_content).decode('utf-8')
     pdf_meta.encoded_file = encoded_pdf
-    inserted_id = save_pdf_timetable_in_db(pdf_meta)
+    inserted_id = await save_pdf_timetable_in_db(pdf_meta)
     return inserted_id
 
 def _create_gemini_prompt(class_id: str, school_id: str, teachers: List[TeacherInfo]) -> str:
@@ -91,20 +97,23 @@ You are an intelligent data extraction service for an education platform. Your t
 Based on the PDF content and the data above, generate the JSON array. Ignore empty slots or non-class periods like "Assembly" or "Lunch".
 """
 
-def _parse_timetable_with_detailed_prompt(pdf_content: bytes, prompt: str) -> List[Dict[str, Any]]:
+
+async def _parse_timetable_with_detailed_prompt(pdf_content: bytes, prompt: str) -> List[Dict[str, Any]]:
+
     """
     Sends the PDF and a detailed prompt to Gemini and gets structured data back.
     """
     logger.info("Sending request to Gemini API...")
     try:
+
         model = genai.GenerativeModel('gemini-2.0-flash')
-        
         pdf_file_for_api = {
             'mime_type': 'application/pdf',
             'data': pdf_content
         }
         
-        response = model.generate_content([prompt, pdf_file_for_api])
+
+        response = await model.generate_content_async([prompt, pdf_file_for_api])
         
         # Clean up the response and parse the JSON
         # The response might be wrapped in ```json ... ``` markdown.
@@ -123,7 +132,8 @@ def _parse_timetable_with_detailed_prompt(pdf_content: bytes, prompt: str) -> Li
         # Re-raise as a ValueError to be caught by the route handler for a clean HTTP response.
         raise ValueError(f"An error occurred while communicating with the AI service: {e}")
 
-def ingest_timetable_from_db(class_id: str, school_id: str, academic_year: str):
+
+async def ingest_timetable_from_db(class_id: str, school_id: str, academic_year: str):
     """
     Orchestrates the timetable ingestion by fetching a stored PDF and using an
     intelligent prompt to parse it.
@@ -132,12 +142,12 @@ def ingest_timetable_from_db(class_id: str, school_id: str, academic_year: str):
     try:
         # 1. Fetch the stored PDF and its metadata from DB
         logger.info("STEP 1: Fetching stored PDF from database...")
-        pdf_timetable = get_pdf_timetable_from_db(class_id, school_id, academic_year)
+        pdf_timetable = await get_pdf_timetable_from_db(class_id, school_id, academic_year)
         logger.info("STEP 1: Successfully fetched PDF.")
         
         # 2. Fetch the latest teacher list for the school.
         logger.info(f"STEP 2: Fetching teacher list for school {pdf_timetable.school_id}...")
-        teachers = get_teachers_from_institution(pdf_timetable.school_id)
+        teachers = await get_teachers_from_institution(pdf_timetable.school_id)
         logger.info("STEP 2: Successfully fetched teachers.")
 
         # 3. Decode PDF content
@@ -160,7 +170,9 @@ def ingest_timetable_from_db(class_id: str, school_id: str, academic_year: str):
 
         # 5. Call Gemini to get structured, ready-to-insert data
         logger.info("STEP 5: Calling Gemini service for parsing...")
-        parsed_events_json = _parse_timetable_with_detailed_prompt(pdf_content, gemini_prompt)
+
+        parsed_events_json = await _parse_timetable_with_detailed_prompt(pdf_content, gemini_prompt)
+
         logger.info(f"STEP 5: Received {len(parsed_events_json)} events from Gemini.")
         
         if not parsed_events_json:
@@ -185,7 +197,9 @@ def ingest_timetable_from_db(class_id: str, school_id: str, academic_year: str):
 
         # 7. Save the validated events to the database
         logger.info("STEP 7: Saving events to database...")
-        created_ids = create_timetable_events_in_db(events_to_create)
+
+        created_ids = await create_timetable_events_in_db(events_to_create)
+
         logger.info(f"STEP 7: Successfully created {len(created_ids)} timetable events in DB.")
         
         result = {
@@ -201,14 +215,16 @@ def ingest_timetable_from_db(class_id: str, school_id: str, academic_year: str):
         # Re-raise the exception to be handled by the route
         raise 
 
-def pair_lessons_for_teacher(teacher_id: str):
+
+async def pair_lessons_for_teacher(teacher_id: str):
     """
     Fetches all unpaired events for a teacher and pairs them with upcoming lesson sessions for each class.
     """
     logger.info(f"--- Starting lesson pairing process for teacher_id: {teacher_id} ---")
 
     # 1. Fetch all unpaired events for the teacher, sorted by date
-    unpaired_events = get_unpaired_events_for_teacher(teacher_id)
+
+    unpaired_events = await get_unpaired_events_for_teacher(teacher_id)
     if not unpaired_events:
         logger.info("No unpaired events found for this teacher.")
         return {"message": "No unpaired events found to process.", "paired_events_count": 0}
@@ -231,7 +247,8 @@ def pair_lessons_for_teacher(teacher_id: str):
         
         # Fetch the list of upcoming session IDs from the teacher_class_data collection.
         # The class_id from the event corresponds to the className in the content collection.
-        sessions_to_pair = get_upcoming_sessions_for_class(teacher_id, class_id)
+
+        sessions_to_pair = await get_upcoming_sessions_for_class(teacher_id, class_id)
         
         if not sessions_to_pair:
             logger.warning(f"No upcoming sessions found for class '{class_id}'. Skipping pairing for this class.")
@@ -241,7 +258,8 @@ def pair_lessons_for_teacher(teacher_id: str):
         paired_in_class = 0
         # The events are already sorted by date, and sessions are in sequence.
         for event, session_id in zip(events, sessions_to_pair):
-            success = pair_lesson_to_event(str(event.id), session_id)
+            success = await pair_lesson_to_event(str(event.id), session_id)
+
             if success:
                 paired_in_class += 1
         
@@ -268,3 +286,4 @@ def get_daily_schedule_for_teacher_class(teacher_id: str, class_id: str, day: da
         logger.error(f"Error in service layer while fetching daily schedule: {e}", exc_info=True)
         # Re-raise to be handled by the API layer
         raise 
+

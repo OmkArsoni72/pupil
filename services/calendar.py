@@ -1,4 +1,6 @@
 
+from google.oauth2.service_account import Credentials
+
 
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 SERVICE_ACCOUNT_FILE = "credentials.json"

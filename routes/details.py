@@ -5,9 +5,11 @@
 
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException
-
-from services.db_operations.base import db
+from services.db_operations.base import db, get_student_report, get_class_report_by_board_grade_section
 import urllib.parse
+from models.student_report import StudentReport
+from models.class_report import ClassReport
+
 
 router = APIRouter()
 
@@ -18,15 +20,16 @@ def get_grades():
     try:
         grades = db["lesson_script"].find()
         return [{"id": str(grade["_id"]), "grade": grade["grade"]} for grade in grades]
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # ✅ API to fetch sections for a specific grade
 @router.get("/grades/{grade_id}/sections")
-def get_sections(grade_id: str):
+async def get_sections(grade_id: str):
     try:
-        grade = db["lesson_script"].find_one({"_id": ObjectId(grade_id)})
+        grade = await db["lesson_script"].find_one({"_id": ObjectId(grade_id)})
         if not grade:
             raise HTTPException(status_code=404, detail="Grade not found")
 
@@ -41,9 +44,9 @@ def get_sections(grade_id: str):
 
 # ✅ API to fetch subjects for a specific section
 @router.get("/grades/{grade_id}/sections/{section_name}")
-def get_subjects(grade_id: str, section_name: str):
+async def get_subjects(grade_id: str, section_name: str):
     try:
-        grade = db["lesson_script"].find_one({"_id": ObjectId(grade_id)})
+        grade = await db["lesson_script"].find_one({"_id": ObjectId(grade_id)})
         if not grade:
             raise HTTPException(status_code=404, detail="Grade not found")
 
@@ -61,9 +64,9 @@ def get_subjects(grade_id: str, section_name: str):
 
 # ✅ API to fetch chapters of a subject
 @router.get("/grades/{grade_id}/sections/{section_name}/subjects/{subject_board}/{subject_name}")
-def get_chapters(grade_id: str, section_name: str, subject_board: str, subject_name: str):
+async def get_chapters(grade_id: str, section_name: str, subject_board: str, subject_name: str):
     try:
-        grade = db["lesson_script"].find_one({"_id": ObjectId(grade_id)})
+        grade = await db["lesson_script"].find_one({"_id": ObjectId(grade_id)})
         if not grade:
             raise HTTPException(status_code=404, detail="Grade not found")
 
@@ -85,11 +88,12 @@ def get_chapters(grade_id: str, section_name: str, subject_board: str, subject_n
 # ✅ API to fetch periods of a chapter
 @router.get(
     "/grades/{grade_id}/sections/{section_name}/subjects/{subject_board}/{subject_name}/chapters/{chapter_name}/periods")
-def get_periods(grade_id: str, section_name: str, subject_board: str, subject_name: str, chapter_name: str):
+
+async def get_periods(grade_id: str, section_name: str, subject_board: str, subject_name: str, chapter_name: str):
     try:
         chapter_name = urllib.parse.unquote(chapter_name)
 
-        grade = db["lesson_script"].find_one({"_id": ObjectId(grade_id)})
+        grade = await db["lesson_script"].find_one({"_id": ObjectId(grade_id)})
         if not grade:
             raise HTTPException(status_code=404, detail="Grade not found")
 
@@ -110,3 +114,20 @@ def get_periods(grade_id: str, section_name: str, subject_board: str, subject_na
         return chapter.get("periods", [])
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/student_report/{class_id}/{student_id}", response_model=StudentReport)
+async def fetch_student_report(class_id: str, student_id: str):
+    report = await get_student_report(student_id=student_id, class_id=class_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Student report not found")
+    return report
+
+
+@router.get("/class_report/board/{board}/grade/{grade}/section/{section}", response_model=ClassReport)
+async def fetch_class_report_by_board_grade_section(board: str, grade: str, section: str):
+    report = await get_class_report_by_board_grade_section(board=board, grade=grade, section=section)
+    if not report:
+        raise HTTPException(status_code=404, detail="Class report not found for given board, grade, and section")
+    return report
+

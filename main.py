@@ -1,15 +1,40 @@
 import os
+from datetime import datetime, date
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
+from bson import ObjectId
 
-from routes import details, user, timetable, afterhours,content
+from routes import details, user, timetable, afterhours, content, assessment
+from routes.websocket import sio  # socketio server
 from services.ping_schedular import self_ping
+import socketio
 
 PORT = int(os.getenv("PORT", 8080))
 
-app = FastAPI()
+
+# Enhanced JSON Response
+class EnhancedJSONResponse(JSONResponse):
+    @staticmethod
+    def _encode_content(content):
+        return jsonable_encoder(
+            content,
+            custom_encoder={
+                ObjectId: str,
+                datetime: lambda v: v.isoformat(),
+                date: lambda v: v.isoformat(),
+            },
+        )
+
+    def render(self, content) -> bytes:
+        safe_content = self._encode_content(content)
+        return super().render(safe_content)
+
+
+app = FastAPI(default_response_class=EnhancedJSONResponse)
 
 # CORS Configuration
 origins = ["http://localhost:8080"]  # Add your frontend origins
@@ -22,11 +47,16 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
+# Routers
 app.include_router(details.router, prefix="/api")
 app.include_router(user.router, prefix="/api")
 app.include_router(timetable.router, prefix="/api")
 app.include_router(afterhours.router, prefix="/api")
 app.include_router(content.router, prefix="/api")
+app.include_router(assessment.router, prefix="/api")
+
+# Mount Socket.IO
+app.mount("/ws", socketio.ASGIApp(sio))
 
 
 @app.get("/")
@@ -34,11 +64,12 @@ def read_root():
     return {"message": "API is running!"}
 
 
+# Scheduler
 scheduler = BackgroundScheduler()
-scheduler.add_job(self_ping, 'interval', minutes=10)
+scheduler.add_job(self_ping, "interval", minutes=10)
 scheduler.start()
 
-# Optional if running via `uvicorn main:app --reload`
+# Run with Uvicorn
 if __name__ == "__main__":
     import uvicorn
 
