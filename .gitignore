@@ -1,0 +1,15 @@
+.env
+./node_modules
+.venv
+dev
+.idea
+__pycache__
+
+
+timetables
+transfer_mongo.py
+db.py
+waste
+assessment_agent_prd.md
+ASSESSMENT_AGENT_UPDATES.md
+db_structure.md
