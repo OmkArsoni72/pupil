@@ -1,8 +1,8 @@
 from bson import ObjectId
-from typing import List
-
 from fastapi import APIRouter, HTTPException
+from services.calendar import create_event, delete_event
 
+from typing import List
 from models.teacher import Teacher, Lecture, Chapter
 # from services.calendar import create_event, delete_event
 from services.db_operations.base import db, get_all_chapters_from_teacher_class_data, update_chapters_in_teacher_class_data
@@ -31,8 +31,8 @@ async def add_lecture(teacher_id: str, lecture: Lecture):
         ):
             raise HTTPException(status_code=400, detail="Time conflict with existing lecture")
 
-    # event_id = await create_event(teacher["calendar_id"], lecture)
-    event_id = "cal_event_id_placeholder" # Placeholder
+    event_id = await create_event(teacher["calendar_id"], lecture)
+
 
     lecture_dict = lecture.model_dump()
     lecture_dict["calendar_event_id"] = event_id
@@ -56,7 +56,9 @@ async def delete_lecture(teacher_id: str, topic: str):
 
     for lec in lectures:
         if lec["topic"] == topic:
-            # await delete_event(lec["calendar_event_id"])
+
+            await delete_event(lec["calendar_event_id"])
+
             deleted_event_id = lec["calendar_event_id"]
         else:
             updated_lectures.append(lec)
@@ -67,7 +69,6 @@ async def delete_lecture(teacher_id: str, topic: str):
     )
 
     return {"message": "Lecture deleted", "calendar_event_id": deleted_event_id}
-
 
 @router.get("/teacher_class_data/{class_id}/chapters", response_model=List[Chapter], tags=["TeacherClassData"])
 async def get_all_chapters(class_id: str):

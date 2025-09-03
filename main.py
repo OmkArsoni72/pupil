@@ -1,20 +1,22 @@
 import os
+from datetime import datetime, date
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from datetime import datetime, date
 from bson import ObjectId
-from fastapi.middleware.cors import CORSMiddleware
 
-from routes import details, user, timetable, content,assessment
+from routes import details, user, timetable, afterhours, content, assessment
+from routes.websocket import sio  # socketio server
 from services.ping_schedular import self_ping
-from routes.websocket import sio  # Import the socketio server
 import socketio
 
 PORT = int(os.getenv("PORT", 8080))
 
+
+# Enhanced JSON Response
 class EnhancedJSONResponse(JSONResponse):
     @staticmethod
     def _encode_content(content):
@@ -45,22 +47,29 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
+# Routers
 app.include_router(details.router, prefix="/api")
 app.include_router(user.router, prefix="/api")
+app.include_router(timetable.router, prefix="/api")
+app.include_router(afterhours.router, prefix="/api")
+app.include_router(content.router, prefix="/api")
 app.include_router(assessment.router, prefix="/api")
-# Mount Socket.IO ASGI app
-app.mount('/ws', socketio.ASGIApp(sio))
+
+# Mount Socket.IO
+app.mount("/ws", socketio.ASGIApp(sio))
+
 
 @app.get("/")
 def read_root():
     return {"message": "API is running!"}
 
 
+# Scheduler
 scheduler = BackgroundScheduler()
-scheduler.add_job(self_ping, 'interval', minutes=10)
+scheduler.add_job(self_ping, "interval", minutes=10)
 scheduler.start()
 
-# Optional if running via `uvicorn main:app --reload`
+# Run with Uvicorn
 if __name__ == "__main__":
     import uvicorn
 

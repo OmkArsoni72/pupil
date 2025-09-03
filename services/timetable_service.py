@@ -9,6 +9,7 @@ from datetime import datetime, time, timedelta, date
 from bson import ObjectId
 from fastapi import HTTPException
 
+
 from pydantic import ValidationError
 
 from models.timetable import PDFTimetable, TimetableEvent, TeacherInfo, Lesson
@@ -40,6 +41,7 @@ except Exception as e:
     logger.error(f"Failed to configure Gemini: {e}")
     # You might want to handle this more gracefully, but for now, we log and proceed.
     # The app will fail later if a call to Gemini is made.
+
 
 async def store_timetable_pdf(pdf_meta: PDFTimetable, pdf_content: bytes) -> str:
     """
@@ -95,19 +97,22 @@ You are an intelligent data extraction service for an education platform. Your t
 Based on the PDF content and the data above, generate the JSON array. Ignore empty slots or non-class periods like "Assembly" or "Lunch".
 """
 
+
 async def _parse_timetable_with_detailed_prompt(pdf_content: bytes, prompt: str) -> List[Dict[str, Any]]:
+
     """
     Sends the PDF and a detailed prompt to Gemini and gets structured data back.
     """
     logger.info("Sending request to Gemini API...")
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        
+
+        model = genai.GenerativeModel('gemini-2.0-flash')
         pdf_file_for_api = {
             'mime_type': 'application/pdf',
             'data': pdf_content
         }
         
+
         response = await model.generate_content_async([prompt, pdf_file_for_api])
         
         # Clean up the response and parse the JSON
@@ -126,6 +131,7 @@ async def _parse_timetable_with_detailed_prompt(pdf_content: bytes, prompt: str)
         logger.error(f"Error calling Gemini API: {e}", exc_info=True)
         # Re-raise as a ValueError to be caught by the route handler for a clean HTTP response.
         raise ValueError(f"An error occurred while communicating with the AI service: {e}")
+
 
 async def ingest_timetable_from_db(class_id: str, school_id: str, academic_year: str):
     """
@@ -164,7 +170,9 @@ async def ingest_timetable_from_db(class_id: str, school_id: str, academic_year:
 
         # 5. Call Gemini to get structured, ready-to-insert data
         logger.info("STEP 5: Calling Gemini service for parsing...")
+
         parsed_events_json = await _parse_timetable_with_detailed_prompt(pdf_content, gemini_prompt)
+
         logger.info(f"STEP 5: Received {len(parsed_events_json)} events from Gemini.")
         
         if not parsed_events_json:
@@ -189,7 +197,9 @@ async def ingest_timetable_from_db(class_id: str, school_id: str, academic_year:
 
         # 7. Save the validated events to the database
         logger.info("STEP 7: Saving events to database...")
+
         created_ids = await create_timetable_events_in_db(events_to_create)
+
         logger.info(f"STEP 7: Successfully created {len(created_ids)} timetable events in DB.")
         
         result = {
@@ -205,6 +215,7 @@ async def ingest_timetable_from_db(class_id: str, school_id: str, academic_year:
         # Re-raise the exception to be handled by the route
         raise 
 
+
 async def pair_lessons_for_teacher(teacher_id: str):
     """
     Fetches all unpaired events for a teacher and pairs them with upcoming lesson sessions for each class.
@@ -212,6 +223,7 @@ async def pair_lessons_for_teacher(teacher_id: str):
     logger.info(f"--- Starting lesson pairing process for teacher_id: {teacher_id} ---")
 
     # 1. Fetch all unpaired events for the teacher, sorted by date
+
     unpaired_events = await get_unpaired_events_for_teacher(teacher_id)
     if not unpaired_events:
         logger.info("No unpaired events found for this teacher.")
@@ -235,6 +247,7 @@ async def pair_lessons_for_teacher(teacher_id: str):
         
         # Fetch the list of upcoming session IDs from the teacher_class_data collection.
         # The class_id from the event corresponds to the className in the content collection.
+
         sessions_to_pair = await get_upcoming_sessions_for_class(teacher_id, class_id)
         
         if not sessions_to_pair:
@@ -246,6 +259,7 @@ async def pair_lessons_for_teacher(teacher_id: str):
         # The events are already sorted by date, and sessions are in sequence.
         for event, session_id in zip(events, sessions_to_pair):
             success = await pair_lesson_to_event(str(event.id), session_id)
+
             if success:
                 paired_in_class += 1
         
@@ -254,66 +268,22 @@ async def pair_lessons_for_teacher(teacher_id: str):
 
     logger.info(f"--- Finished lesson pairing process. Total events paired: {total_paired_count} ---")
     return {
-        "message": f"Lesson pairing complete. Paired a total of {total_paired_count} events.",
+        "message": "Lesson pairing process completed.",
+        "total_paired_events": total_paired_count,
         "details": pairing_details_by_class
     } 
 
-async def get_daily_schedule_for_teacher_class(teacher_id: str, class_id: str, day: date) -> List[TimetableEvent]:
+def get_daily_schedule_for_teacher_class(teacher_id: str, class_id: str, day: date) -> List[TimetableEvent]:
     """
-    Fetches all events for a specific teacher, class, and day.
+    Service function to fetch the daily schedule for a given teacher and class.
     """
-    logger.info(f"Fetching daily schedule for teacher {teacher_id}, class {class_id} on {day}.")
-    
-    # The database call is already singular, so we just await it.
-    daily_events = await get_events_for_teacher_class_day(teacher_id, class_id, day)
-    
-    if not daily_events:
-        logger.info("No events found for the given criteria.")
-        return []
-        
-    logger.info(f"Successfully fetched {len(daily_events)} events.")
-    return daily_events
+    logger.info(f"Fetching schedule for teacher '{teacher_id}', class '{class_id}' on {day.isoformat()}")
+    try:
+        events = get_events_for_teacher_class_day(teacher_id, class_id, day)
+        logger.info(f"Found {len(events)} events for the day.")
+        return events
+    except Exception as e:
+        logger.error(f"Error in service layer while fetching daily schedule: {e}", exc_info=True)
+        # Re-raise to be handled by the API layer
+        raise 
 
-async def complete_session_and_event(event_id: str) -> Dict[str, Any]:
-    """
-    Marks a session as complete by updating the event status and moving the session
-    from 'upcoming' to 'completed' in the class curriculum data.
-    """
-    logger.info(f"--- Starting session completion process for event_id: {event_id} ---")
-
-    # 1. Fetch the event to get necessary details
-    event = await get_timetable_event_by_id(event_id)
-    if not event:
-        raise HTTPException(status_code=404, detail=f"Timetable event with id {event_id} not found.")
-
-    if event.status == 'completed':
-        logger.warning(f"Event {event_id} is already marked as completed.")
-        return {"message": "Event was already completed.", "event_id": event_id}
-
-    if not event.planned_lesson_id:
-        raise HTTPException(status_code=400, detail="Cannot complete an event that has no planned lesson.")
-
-    # 2. Update the event status to 'completed'
-    status_updated = await update_timetable_event_status(event_id, 'completed')
-    if not status_updated:
-        # This is unlikely if the fetch succeeded, but good to handle.
-        raise HTTPException(status_code=500, detail="Failed to update event status.")
-    
-    logger.info(f"Successfully updated status for event {event_id} to 'completed'.")
-
-    # 3. Move the session from 'upcoming' to 'completed'
-    session_moved = await move_session_to_completed(event.class_id, event.planned_lesson_id)
-    if not session_moved:
-        # This could happen if the session was already moved or the class document doesn't exist.
-        logger.warning(f"Could not move session {event.planned_lesson_id} for class {event.class_id}. It might have been moved previously or the class data is missing.")
-        # We don't raise an error here because the primary action (completing the event) succeeded.
-        # This is a data consistency warning rather than a critical failure.
-
-    logger.info(f"--- Session completion process finished for event_id: {event_id} ---")
-    
-    return {
-        "message": "Session marked as complete successfully.",
-        "event_id": event_id,
-        "session_id": event.planned_lesson_id,
-        "class_id": event.class_id
-    } 

@@ -11,11 +11,14 @@ from bson import ObjectId
 
 logger = logging.getLogger(__name__)
 
+
 async def get_pdf_timetable_from_db(class_id: str, school_id: str, academic_year: str) -> PDFTimetable:
+
     """
     Fetches a single PDF timetable document from the database.
     """
     try:
+
         pdf_data = await pdf_timetable_collection.find_one({
             "class_id": class_id,
             "school_id": school_id,
@@ -28,7 +31,9 @@ async def get_pdf_timetable_from_db(class_id: str, school_id: str, academic_year
     except PyMongoError as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
+
 async def create_timetable_events_in_db(events: List[TimetableEvent]) -> List[str]:
+
     """
     Inserts multiple timetable events into the database.
     """
@@ -37,10 +42,12 @@ async def create_timetable_events_in_db(events: List[TimetableEvent]) -> List[st
         # Using `exclude_none=True` prevents `_id: null` from being inserted,
         # which allows MongoDB to generate a unique ObjectId for each new event.
         event_docs = [event.model_dump(by_alias=True, exclude_none=True) for event in events]
+
         result = await timetable_collection.insert_many(event_docs)
         return [str(inserted_id) for inserted_id in result.inserted_ids]
     except PyMongoError as e:
         raise HTTPException(status_code=500, detail=f"Database error while creating timetable events: {str(e)}")
+
 
 async def save_pdf_timetable_in_db(pdf_meta: PDFTimetable) -> str:
     """
@@ -49,11 +56,12 @@ async def save_pdf_timetable_in_db(pdf_meta: PDFTimetable) -> str:
     try:
         # Use exclude_none=True to prevent `_id: null` from being inserted.
         pdf_data = pdf_meta.model_dump(by_alias=True, exclude_none=True)
+
         result = await pdf_timetable_collection.insert_one(pdf_data)
+
         return str(result.inserted_id)
     except PyMongoError as e:
         raise HTTPException(status_code=500, detail=f"Database error while saving PDF timetable: {str(e)}")
-
 async def get_unpaired_events_for_teacher(teacher_id: str) -> List[TimetableEvent]:
     """Fetches all scheduled events for a teacher that don't have a lesson paired yet, sorted by date."""
     try:
@@ -63,17 +71,17 @@ async def get_unpaired_events_for_teacher(teacher_id: str) -> List[TimetableEven
             "is_holiday": False,
             "status": "scheduled"
         }).sort("scheduled_date", 1)
+
         return [TimetableEvent(**event) async for event in events_cursor]
     except PyMongoError as e:
         raise HTTPException(status_code=500, detail=f"Database error while fetching events: {str(e)}")
+
 
 async def get_upcoming_sessions_for_class(teacher_id: str, class_id: str) -> List[str]:
     """
     Fetches the list of upcoming session IDs for a specific teacher and class.
     """
     try:
-        # We need to match the teacherId and the classId.
-        # Both IDs in the document are stored as ObjectIds.
         teacher_class_data = await teacher_class_data_collection.find_one({
             "teacherId": teacher_id,
             "classId": ObjectId(class_id)
@@ -83,7 +91,6 @@ async def get_upcoming_sessions_for_class(teacher_id: str, class_id: str) -> Lis
             logger.warning(f"No teacher_class_data found for teacher '{teacher_id}' and class '{class_id}'.")
             return []
         
-        # The session IDs are stored under sessions -> upcoming.
         upcoming_sessions = teacher_class_data.get("sessions", {}).get("upcoming", [])
         
         if not upcoming_sessions:
@@ -92,8 +99,8 @@ async def get_upcoming_sessions_for_class(teacher_id: str, class_id: str) -> Lis
         return upcoming_sessions
     except PyMongoError as e:
         logger.error(f"Database error fetching upcoming sessions for teacher {teacher_id}: {e}")
-        # We return an empty list and let the service layer decide how to handle it.
         return []
+
 
 async def get_events_for_teacher_class_day(teacher_id: str, class_id: str, day: date) -> List[TimetableEvent]:
     """Fetches all scheduled events for a specific teacher, class, and day, sorted by time."""
@@ -109,11 +116,12 @@ async def get_events_for_teacher_class_day(teacher_id: str, class_id: str, day: 
                 "$lte": end_of_day
             }
         }).sort("scheduled_date", 1)
-        
+
         return [TimetableEvent(**event) async for event in events_cursor]
     except PyMongoError as e:
         logger.error(f"Database error while fetching events for teacher {teacher_id} on {day}: {e}")
         raise HTTPException(status_code=500, detail=f"Database error while fetching events: {str(e)}")
+
 
 async def pair_lesson_to_event(event_id: str, lesson_id: str) -> bool:
     """Updates a timetable event to link it to a specific lesson."""
@@ -128,6 +136,7 @@ async def pair_lesson_to_event(event_id: str, lesson_id: str) -> bool:
         return True
     except PyMongoError as e:
         raise HTTPException(status_code=500, detail=f"Database error while pairing lesson to event: {str(e)}")
+        
 
 async def get_timetable_event_by_id(event_id: str) -> TimetableEvent:
     """Fetches a single timetable event by its document _id."""
@@ -179,6 +188,7 @@ async def get_teachers_from_institution(school_id: str) -> List[TeacherInfo]:
     """
     try:
         institution = await institutions_collection.find_one({"_id": ObjectId(school_id)})
+
         
         if not institution:
             logger.warning(f"Institution with school_id '{school_id}' not found.")

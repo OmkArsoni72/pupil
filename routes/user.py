@@ -9,44 +9,33 @@ from models.user import (
     get_code, find_user_by_uid, serialize_mongo_document
 )
 from services.auth.token import create_access_token, verify_token
-from services.db_operations.user_db import UserBase, UserUpdate, UserResponse, LoginUser, RoleUpdate, CodeBind
+from services.db_operations.user_db import (
+    UserBase, UserUpdate, UserResponse, LoginUser, RoleUpdate, CodeBind
+)
 
 router = APIRouter()
 
 # In-memory session tracking
 active_sessions = {}
 
-# Create user
-@router.post("/user/", response_model=UserResponse, tags=["User"])
-def create_new_user(user: UserBase):
+# ---------------- AUTH ----------------
+
+# Register user (default role = TEACHER)
+@router.post("/user/register", tags=["Auth"])
+def register_user(user: UserBase):
     try:
         if find_user_by_email(user.email):
             raise HTTPException(status_code=400, detail="User already exists")
-        
-        user_id = create_user(user)
-        return get_user(user_id)
+
+        user_data = user.model_dump()
+        user_data["role"] = TEACHER
+        user_id = create_user(user_data)
+        return {"msg": "User registered", "user_id": str(user_id)}
     except PyMongoError as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-# Get all users with pagination
-@router.get("/user/", response_model=List[UserResponse], tags=["User"])
-def read_users(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(10, ge=1, le=100)
-):
-    return get_users(skip=skip, limit=limit)
 
-# Get single user
-@router.get("/user/{user_id}", response_model=UserResponse, tags=["User"])
-def read_user(user_id: str):
-    return get_user(user_id)
-
-# Update user
-@router.put("/user/{user_id}", response_model=UserResponse, tags=["User"])
-def update_user_details(user_id: str, user_update: UserUpdate):
-    return update_user(user_id, user_update)
-
-# Login user
+# Login user (single active session)
 @router.post("/user/login", tags=["Auth"])
 def login(user: LoginUser):
     try:
@@ -70,7 +59,8 @@ def login(user: LoginUser):
     except PyMongoError as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-# Middleware
+
+# Middleware to validate session + token
 def get_current_user(authorization: str = Header(...)):
     token = authorization.replace("Bearer ", "")
     payload = verify_token(token)
@@ -84,22 +74,57 @@ def get_current_user(authorization: str = Header(...)):
 
     return user_id
 
-# Update role
-@router.put("/user/{user_id}/role", tags=["Role"])
-def update_role(user_id: str, role_data: RoleUpdate):
+
+# ---------------- USER CRUD ----------------
+
+@router.post("/user/", response_model=UserResponse, tags=["User"])
+def create_new_user(user: UserBase):
     try:
+        if find_user_by_email(user.email):
+            raise HTTPException(status_code=400, detail="User already exists")
+        user_id = create_user(user)
+        return get_user(user_id)
+    except PyMongoError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
+@router.get("/user/", response_model=List[UserResponse], tags=["User"])
+def read_users(skip: int = Query(0, ge=0), limit: int = Query(10, ge=1, le=100)):
+    return get_users(skip=skip, limit=limit)
+
+
+@router.get("/user/{user_id}", response_model=UserResponse, tags=["User"])
+def read_user(user_id: str):
+    return get_user(user_id)
+
+
+@router.put("/user/{user_id}", response_model=UserResponse, tags=["User"])
+def update_user_details(user_id: str, user_update: UserUpdate):
+    return update_user(user_id, user_update)
+
+
+@router.delete("/user/{user_id}", tags=["User"])
+def delete_user_details(user_id: str):
+    return delete_user(user_id)
+
+
+# ---------------- ROLES ----------------
+
+@router.put("/user/{user_id}/role", tags=["Role"])
+def update_role(user_id: str, role_data: RoleUpdate, current_user: str = Depends(get_current_user)):
+    try:
+        if user_id != current_user:
+            raise HTTPException(status_code=403, detail="Unauthorized user ID")
         update_user_role(user_id, role_data.role, role_data.grade, role_data.section)
         return {"msg": "Role updated"}
     except PyMongoError as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-# Bind code to SmartBoard
+
+# ---------------- SMARTBOARD ----------------
+
 @router.post("/user/{user_id}/code", tags=["SmartBoard"])
-def bind_code_to_smartBoard(
-    user_id: str,
-    data: CodeBind,
-    current_user: str = Depends(get_current_user)
-):
+def bind_code_to_smartBoard(user_id: str, data: CodeBind, current_user: str = Depends(get_current_user)):
     try:
         if current_user != user_id:
             raise HTTPException(status_code=403, detail="Unauthorized user ID")
@@ -108,12 +133,9 @@ def bind_code_to_smartBoard(
     except PyMongoError as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-# Get SmartBoard code
+
 @router.get("/user/{user_id}/code", tags=["SmartBoard"])
-def get_code_from_smartBoard(
-    user_id: str,
-    current_user: str = Depends(get_current_user)
-):
+def get_code_from_smartBoard(user_id: str, current_user: str = Depends(get_current_user)):
     try:
         if current_user != user_id:
             raise HTTPException(status_code=403, detail="Unauthorized user ID")
@@ -122,7 +144,9 @@ def get_code_from_smartBoard(
     except PyMongoError as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-# Get user by UID
+
+# ---------------- UID LOOKUP ----------------
+
 @router.get("/user/uid/{uid}", response_model=UserResponse, tags=["User"])
 def get_user_details(uid: str):
     try:

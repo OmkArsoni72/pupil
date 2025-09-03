@@ -1,3 +1,4 @@
+
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, EmailStr
@@ -5,6 +6,13 @@ from bson import ObjectId
 
 from models.role import TEACHER
 
+
+
+class UserBase(BaseModel):
+    email: str
+    name: str
+    uid: str
+    role: Optional[str] = TEACHER
 
 class ParentDetails(BaseModel):
     name: str
@@ -65,6 +73,7 @@ class UserResponse(BaseModel):
     role: str
     profile: UserProfile
     created_at: datetime
+
 
 
 class LoginUser(BaseModel):

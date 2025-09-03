@@ -1,5 +1,4 @@
 import os
-
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson.objectid import ObjectId
@@ -7,91 +6,88 @@ from bson.errors import InvalidId
 
 load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI")
-MONGODB_URL = os.getenv("MONGODB_URL")
 
 # MongoDB Connection
 client = AsyncIOMotorClient(MONGO_URI)
-print('MongoDB URL:'+ MONGO_URI)
+print("MongoDB connected:", MONGO_URI)
+
+# Main DB (Atlas: 'Pupil_teach')
 db = client["Pupil_teach"]
+
+# === Collections (Unified) ===
 user_collection = db["users"]
 teacher_class_data_collection = db["teacher_class_data"]
 
 timetable_events_collection = db["timetable_events"]
 lessons_collection = db["lessons"]
 
-
-
 pdf_timetable_collection = db["pdf_timetable"]
 timetable_collection = db["timetable"]
 institutions_collection = db["institutions"]
 
-template_collection= db['templates']
-assessment_collection=db['assessments']
-questions_collection=db['question_bank']
-lesson_script_collection = db['lesson_script']
+template_collection = db["templates"]
+assessment_collection = db["assessments"]
+questions_collection = db["question_bank"]
+lesson_script_collection = db["lesson_script"]
+
+sessions_collection = db["sessions"]
+student_reports_collection = db["student_reports"]
+class_reports_collection = db["class_reports"]
+jobs_collection = db["jobs"]
+
+# Optional legacy aliases
+flashcard_users_collection = db["users"]  # from flashcard_game
+teacher_timeline_lessons_collection = db["lessons"]
+
+# === Async Helper Functions ===
 
 async def get_student_report(student_id: str, class_id: str):
-    report = await db["student_reports"].find_one({"studentId": student_id, "classId": class_id})
+    report = await student_reports_collection.find_one({"studentId": student_id, "classId": class_id})
     if report and "_id" in report:
         report["_id"] = str(report["_id"])
     return report
 
 
 async def get_class_report_by_board_grade_section(board: str, grade: str, section: str):
-    report = await db["class_reports"].find_one({"board": board, "grade": grade, "section": section})
-    all_reports = await db["class_reports"].find().to_list(length=None)
-    print('All class reports:', all_reports)
-    print('Fetched class report:', report)
+    report = await class_reports_collection.find_one({"board": board, "grade": grade, "section": section})
+    all_reports = await class_reports_collection.find().to_list(length=None)
+    print("All class reports:", all_reports)
+    print("Fetched class report:", report)
     if report and "_id" in report:
         report["_id"] = str(report["_id"])
     return report
 
+
 async def get_all_chapters_from_teacher_class_data(class_id: str):
-    """
-    Finds the curriculum document using the classId and returns all its chapters.
-    """
     doc = await teacher_class_data_collection.find_one({"classId": ObjectId(class_id)})
     if not doc:
         return None
     curriculum = doc.get("curriculum", {})
     return curriculum.get("chapters", [])
 
+
 async def update_chapters_in_teacher_class_data(class_id: str, chapters: list):
-    """
-    Finds the curriculum document using the classId and updates its chapters.
-    """
     result = await teacher_class_data_collection.update_one(
         {"classId": ObjectId(class_id)},
         {"$set": {"curriculum.chapters": chapters}}
     )
     return result.modified_count > 0
 
+
 async def get_chapter_content(class_id: str, chapter_id: str):
-    """
-    Finds the curriculum document using the classId to fetch content for a specific chapter.
-    """
-    # Find the curriculum document using the new classId reference
-    class_doc = await db.teacher_class_data.find_one({"classId": ObjectId(class_id)})
+    class_doc = await teacher_class_data_collection.find_one({"classId": ObjectId(class_id)})
     if not class_doc:
         return None
 
-    # Find the specific chapter within the curriculum
     chapters = class_doc.get("curriculum", {}).get("chapters", [])
-    target_chapter = None
-    for chapter in chapters:
-        if chapter.get("chapterId") == chapter_id:
-            target_chapter = chapter
-            break
-
+    target_chapter = next((c for c in chapters if c.get("chapterId") == chapter_id), None)
     if not target_chapter:
-        return None  # Chapter not found
+        return None
 
-    # Get session identifiers (lesson numbers) from the chapter
     chapter_sessions = target_chapter.get("chapterSessions", [])
     if not chapter_sessions:
         return []
 
-    # Build a query to fetch all relevant sessions using chapterId and lessonNumber
     session_queries = [
         {"chapterId": chapter_id, "lessonNumber": s.get("lessonNumber")}
         for s in chapter_sessions if s.get("lessonNumber") is not None
@@ -100,58 +96,41 @@ async def get_chapter_content(class_id: str, chapter_id: str):
     if not session_queries:
         return []
 
-    # Fetch all sessions corresponding to the lesson numbers for this chapter
-    sessions_cursor = db.sessions.find({"$or": session_queries})
-    sessions = await sessions_cursor.to_list(length=None)
+    sessions = await sessions_collection.find({"$or": session_queries}).to_list(length=None)
 
-    # Extract lesson scripts and in-class questions
     content = []
     for session in sessions:
-        session_content = {
-            "sessionId": str(session.get("_id"))
-        }
+        session_content = {"sessionId": str(session.get("_id"))}
         if "lessonScript" in session:
             session_content["lessonScript"] = session["lessonScript"]
         if "inClassQuestions" in session:
             session_content["inClassQuestions"] = session["inClassQuestions"]
-        
-        # Only add to the list if there is actual content
-        if "lessonScript" in session_content or "inClassQuestions" in session_content:
+
+        if len(session_content) > 1:
             content.append(session_content)
 
     return content
 
+
 async def get_after_hour_session_content(session_id: str):
-    """
-    Fetches the after-hour session content for a given session ID.
-    """
     query = {}
     try:
-        # Try to convert to ObjectId, if it fails, use the raw string.
         query["_id"] = ObjectId(session_id)
     except InvalidId:
         query["_id"] = session_id
 
-    session = await db.sessions.find_one(query)
-
-    if session and "afterHourSession" in session:
-        return session["afterHourSession"]
-    return None
+    session = await sessions_collection.find_one(query)
+    return session.get("afterHourSession") if session and "afterHourSession" in session else None
 
 
 async def get_lesson_content(session_id: str):
-    """
-    Fetches the lesson script and in-class questions for a given session ID.
-    """
     query = {}
     try:
-        # Try to convert to ObjectId, if it fails, use the raw string.
         query["_id"] = ObjectId(session_id)
     except InvalidId:
         query["_id"] = session_id
 
-    session = await db.sessions.find_one(query)
-
+    session = await sessions_collection.find_one(query)
     if not session:
         return None
 
@@ -165,42 +144,33 @@ async def get_lesson_content(session_id: str):
 
 
 async def update_after_hour_session(session_id: str, content: dict):
-    """
-    Updates the after-hour session content for a given session ID.
-    """
     query = {}
     try:
         query["_id"] = ObjectId(session_id)
     except InvalidId:
         query["_id"] = session_id
-    
-    result = await db.sessions.update_one(query, {"$set": {"afterHourSession": content}})
+
+    result = await sessions_collection.update_one(query, {"$set": {"afterHourSession": content}})
     return result.modified_count > 0
 
 
 async def update_lesson_script(session_id: str, content: dict):
-    """
-    Updates the lesson script for a given session ID.
-    """
     query = {}
     try:
         query["_id"] = ObjectId(session_id)
     except InvalidId:
         query["_id"] = session_id
-        
-    result = await db.sessions.update_one(query, {"$set": {"lessonScript": content}})
+
+    result = await sessions_collection.update_one(query, {"$set": {"lessonScript": content}})
     return result.modified_count > 0
 
 
 async def update_in_class_questions(session_id: str, content: dict):
-    """
-    Updates the in-class questions for a given session ID.
-    """
     query = {}
     try:
         query["_id"] = ObjectId(session_id)
     except InvalidId:
         query["_id"] = session_id
 
-    result = await db.sessions.update_one(query, {"$set": {"inClassQuestions": content}})
+    result = await sessions_collection.update_one(query, {"$set": {"inClassQuestions": content}})
     return result.modified_count > 0

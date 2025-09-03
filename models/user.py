@@ -1,13 +1,17 @@
-
-
-
-
 from bson import ObjectId
 from pymongo.errors import PyMongoError
 from fastapi import HTTPException
 from typing import List, Optional
-from services.db_operations.base import user_collection
 from services.db_operations.user_db import UserBase, UserUpdate, UserResponse
+from services.db_operations.base import user_collection
+
+
+def find_user_by_email(email):
+    try:
+        user = user_collection.find_one({"email": email})
+        # if not user:
+        #     raise HTTPException(status_code=404, detail="User not found")
+
 
 
 def create_user(user_data: UserBase) -> str:
@@ -65,6 +69,7 @@ def delete_user(user_id: str) -> bool:
 def find_user_by_email(email: str) -> Optional[dict]:
     try:
         user = user_collection.find_one({"email": email})
+
         return user
     except PyMongoError as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
@@ -92,6 +97,15 @@ def find_user_by_uid(uid):
 def serialize_mongo_document(document: dict):
     document["_id"] = str(document["_id"])
     return document
+
+
+def create_user(user_data):
+    try:
+        result = user_collection.insert_one(user_data)
+        return result.inserted_id
+    except PyMongoError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
 
 def update_user_role(user_id, role, grade, section):
     try:

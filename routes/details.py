@@ -5,24 +5,22 @@
 
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException
-
 from services.db_operations.base import db, get_student_report, get_class_report_by_board_grade_section
 import urllib.parse
 from models.student_report import StudentReport
 from models.class_report import ClassReport
+
 
 router = APIRouter()
 
 
 # ✅ API to fetch all grades
 @router.get("/grades")
-async def get_grades():
+def get_grades():
     try:
-        print("Using database:", db.name)
-        grades_cursor = db["lesson_script"].find()
-        grades = await grades_cursor.to_list(length=None)
-        print("Fetched grades from MongoDB:", grades)  # Debug print
-        return [{"id": str(grade["_id"]), "grade": str(grade["grade"])} for grade in grades]
+        grades = db["lesson_script"].find()
+        return [{"id": str(grade["_id"]), "grade": grade["grade"]} for grade in grades]
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -90,6 +88,7 @@ async def get_chapters(grade_id: str, section_name: str, subject_board: str, sub
 # ✅ API to fetch periods of a chapter
 @router.get(
     "/grades/{grade_id}/sections/{section_name}/subjects/{subject_board}/{subject_name}/chapters/{chapter_name}/periods")
+
 async def get_periods(grade_id: str, section_name: str, subject_board: str, subject_name: str, chapter_name: str):
     try:
         chapter_name = urllib.parse.unquote(chapter_name)
@@ -131,3 +130,4 @@ async def fetch_class_report_by_board_grade_section(board: str, grade: str, sect
     if not report:
         raise HTTPException(status_code=404, detail="Class report not found for given board, grade, and section")
     return report
+

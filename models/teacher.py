@@ -1,3 +1,4 @@
+
 from pydantic import BaseModel, EmailStr, HttpUrl
 from typing import List, Optional, Dict
 from datetime import datetime
@@ -13,6 +14,7 @@ class Teacher(BaseModel):
     name: str
     email: EmailStr
     calendar_id: str
+
     lectures: List[Lecture] = []
 
 class ChapterSession(BaseModel):
@@ -48,3 +50,4 @@ class TeacherClassData(BaseModel):
     school: School
     sessions: Optional[Dict] = None
     curriculum: Curriculum
+

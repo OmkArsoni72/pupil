@@ -5,6 +5,7 @@ from datetime import date
 import logging
 from bson import ObjectId
 
+
 from services.timetable_service import (
     ingest_timetable_from_db, 
     pair_lessons_for_teacher, 
@@ -44,7 +45,6 @@ async def upload_timetable_pdf(
             file_name=file.filename,
             encoded_file="placeholder"  # This will be replaced by the service
         )
-
         # Use the asynchronous file read method
         pdf_content = await file.read()
         
@@ -63,13 +63,16 @@ class IngestionRequest(BaseModel):
     academic_year: str
 
 @router.post("/timetable/ingest-from-db")
+
 async def ingest_timetable_from_database(request: IngestionRequest = Body(...)):
+
     """
     This endpoint fetches a stored timetable PDF from the database using a
     class_id, school_id, and academic_year, then processes it to create
     timetable events.
     """
     try:
+
         result = await ingest_timetable_from_db(
             class_id=request.class_id,
             school_id=request.school_id,
@@ -136,3 +139,4 @@ async def complete_timetable_event(event_id: str):
     except Exception as e:
         logger.error(f"Error during event completion for event_id {event_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="An unexpected error occurred during the event completion process.") 
+
