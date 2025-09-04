@@ -6,11 +6,12 @@ from services.db_operations.user_db import UserBase, UserUpdate, UserResponse
 from services.db_operations.base import user_collection
 
 
-def find_user_by_email(email):
+def find_user_by_email(email: str) -> Optional[dict]:
     try:
         user = user_collection.find_one({"email": email})
-        # if not user:
-        #     raise HTTPException(status_code=404, detail="User not found")
+        return user
+    except PyMongoError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
 

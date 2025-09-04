@@ -287,3 +287,46 @@ def get_daily_schedule_for_teacher_class(teacher_id: str, class_id: str, day: da
         # Re-raise to be handled by the API layer
         raise 
 
+async def complete_session_and_event(event_id: str) -> Dict[str, Any]:
+    """
+    Marks a session as complete by updating the event status and moving the session
+    from 'upcoming' to 'completed' in the class curriculum data.
+    """
+    logger.info(f"--- Starting session completion process for event_id: {event_id} ---")
+
+    # 1. Fetch the event to get necessary details
+    event = await get_timetable_event_by_id(event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail=f"Timetable event with id {event_id} not found.")
+
+    if event.status == 'completed':
+        logger.warning(f"Event {event_id} is already marked as completed.")
+        return {"message": "Event was already completed.", "event_id": event_id}
+
+    if not event.planned_lesson_id:
+        raise HTTPException(status_code=400, detail="Cannot complete an event that has no planned lesson.")
+
+    # 2. Update the event status to 'completed'
+    status_updated = await update_timetable_event_status(event_id, 'completed')
+    if not status_updated:
+        # This is unlikely if the fetch succeeded, but good to handle.
+        raise HTTPException(status_code=500, detail="Failed to update event status.")
+
+    logger.info(f"Successfully updated status for event {event_id} to 'completed'.")
+
+    # 3. Move the session from 'upcoming' to 'completed'
+    session_moved = await move_session_to_completed(event.class_id, event.planned_lesson_id)
+    if not session_moved:
+        # This could happen if the session was already moved or the class document doesn't exist.
+        logger.warning(f"Could not move session {event.planned_lesson_id} for class {event.class_id}. It might have been moved previously or the class data is missing.")
+        # We don't raise an error here because the primary action (completing the event) succeeded.
+        # This is a data consistency warning rather than a critical failure.
+
+    logger.info(f"--- Session completion process finished for event_id: {event_id} ---")
+
+    return {
+        "message": "Session marked as complete successfully.",
+        "event_id": event_id,
+        "session_id": event.planned_lesson_id,
+        "class_id": event.class_id
+    } 

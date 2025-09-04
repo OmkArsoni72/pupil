@@ -28,6 +28,7 @@ institutions_collection = db["institutions"]
 template_collection = db["templates"]
 assessment_collection = db["assessments"]
 questions_collection = db["question_bank"]
+question_bank_collection=questions_collection
 lesson_script_collection = db["lesson_script"]
 
 sessions_collection = db["sessions"]
