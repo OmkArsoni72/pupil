@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import MongoClient
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
 
@@ -8,7 +8,7 @@ load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI")
 
 # MongoDB Connection
-client = AsyncIOMotorClient(MONGO_URI)
+client = MongoClient(MONGO_URI)
 print("MongoDB connected:", MONGO_URI)
 
 # Main DB (Atlas: 'Pupil_teach')
