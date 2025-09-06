@@ -30,6 +30,11 @@ async def run_job(job_id: str, route: Literal["AHS", "REMEDY"], req: Dict[str, A
 	print(f"🚀 [JOB_RUNNER] Job request keys: {list(req.keys())}")
 	print(f"🚀 [JOB_RUNNER] Requested modes: {req.get('modes', [])}")
 	
+	# Initialize job in JOBS dict if not exists
+	if job_id not in JOBS:
+		JOBS[job_id] = JobStatus(job_id=job_id, status="pending")
+		print(f"🚀 [JOB_RUNNER] Initialized job {job_id} in JOBS dict")
+	
 	try:
 		JOBS[job_id].status = "in_progress"
 		print(f"🚀 [JOB_RUNNER] Updating job {job_id} to in_progress in DB...")
@@ -80,6 +85,9 @@ async def run_job(job_id: str, route: Literal["AHS", "REMEDY"], req: Dict[str, A
 					self.req = req_val
 					self.db_handles = {}
 			shim_state = _StateShim(route, req)
+			# Create cfg if it wasn't created due to early error
+			if 'cfg' not in locals():
+				cfg = RunnableConfig(configurable={"thread_id": job_id})
 			await collector_node(shim_state, cfg)
 			# Try to extract handles if collector added them
 			try:

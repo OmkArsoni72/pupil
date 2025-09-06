@@ -7,6 +7,8 @@ from uuid import uuid4
 import asyncio
 # ---- LangGraph / LangChain ----
 from services.ai.job_runner import JOBS, JobStatus, run_job
+from services.ai.integrated_remedy_runner import INTEGRATED_REMEDY_JOBS, IntegratedRemedyJobStatus, run_integrated_remedy_job
+from services.db_operations.jobs_db import update_job
 from services.db_operations.jobs_db import create_job, get_job
 from services.ai.content_graph import Mode
 from fastapi import Response
@@ -23,6 +25,8 @@ class ContextRefs(BaseModel):
 
 class GapEvidence(BaseModel):
     code: str
+    type: str  # e.g., "conceptual_gap", "application_gap"
+    type_label: str  # e.g., "Conceptual Gap", "Application Gap"
     evidence: Optional[List[str]] = None
 
 class AHSRequest(BaseModel):
@@ -41,10 +45,11 @@ class RemedyRequest(BaseModel):
     teacher_class_id: str
     student_id: str
     duration_minutes: int = Field(ge=5, le=40)
+    request_meta: Optional[Dict[str, Any]] = None  # e.g., {"test_run": true, "request_origin": "reports_agent"}
     learning_gaps: List[GapEvidence] = Field(min_length=1)
     context_refs: ContextRefs
-    modes: List[Mode] = Field(min_length=1)
-    options: Optional[Dict[str, Any]] = None  # e.g., {"spiral_enable": True, "max_loops": 3}
+    modes: Optional[List[Mode]] = None  # Optional - Remedy Agent will determine modes automatically
+    options: Optional[Dict[str, Any]] = None  # e.g., {"problems": {"count": 5}, "max_remediation_cycles": 3}
 
 """JobStatus model and JOBS store moved to services.ai.job_runner"""
 
@@ -58,11 +63,30 @@ async def content_generation_for_ahs(payload: AHSRequest):
 
 @router.post("/v1/contentGenerationForRemedies", response_model=JobStatus, status_code=202)
 async def content_generation_for_remedies(payload: RemedyRequest):
-    job_id = f"JOB_REM_{uuid4().hex[:8]}"
-    print(f"Creating remedy job: {job_id}")
+    """
+    Generate remediation content using Remedy Agent → Content Agent flow.
     
+    This endpoint:
+    1. Uses Remedy Agent to classify gaps and generate remediation plans
+    2. Passes those plans to Content Agent to generate learning content
+    3. Returns job status for tracking
+    """
+    job_id = f"JOB_REM_{uuid4().hex[:8]}"
+    print(f"Creating integrated remedy job: {job_id}")
+    
+    # Create integrated remedy job status
+    INTEGRATED_REMEDY_JOBS[job_id] = IntegratedRemedyJobStatus(
+        job_id=job_id,
+        status="pending",
+        progress=0
+    )
+    print(f"✅ [REMEDY_ROUTE] Created integrated remedy job: {job_id}")
+    
+    # Also create in regular jobs store for compatibility
     JOBS[job_id] = JobStatus(job_id=job_id, status="pending", progress=0)
-    print(f"Job {job_id} added to in-memory store")
+    print(f"✅ [REMEDY_ROUTE] Job {job_id} added to in-memory store")
+    print(f"✅ [REMEDY_ROUTE] Current JOBS keys: {list(JOBS.keys())}")
+    print(f"✅ [REMEDY_ROUTE] Current INTEGRATED_REMEDY_JOBS keys: {list(INTEGRATED_REMEDY_JOBS.keys())}")
     
     try:
         await create_job(job_id, route="REMEDY", payload=payload.model_dump())
@@ -71,28 +95,71 @@ async def content_generation_for_remedies(payload: RemedyRequest):
         print(f"Failed to create job {job_id} in DB: {str(e)}")
         # Continue anyway, the job is in memory
     
-    asyncio.create_task(run_job(job_id, "REMEDY", payload.model_dump()))
-    print(f"Job {job_id} task created")
+    # Start integrated remedy job (Remedy Agent → Content Agent)
+    try:
+        asyncio.create_task(run_integrated_remedy_job(
+            job_id=job_id,
+            classified_gaps=[gap.model_dump() for gap in payload.learning_gaps],
+            student_id=payload.student_id,
+            teacher_class_id=payload.teacher_class_id,
+            context_refs=payload.context_refs.model_dump() if hasattr(payload.context_refs, 'model_dump') else payload.context_refs
+        ))
+        print(f"Integrated remedy job {job_id} task created")
+    except Exception as e:
+        print(f"❌ [CONTENT_ROUTE] Failed to create integrated remedy job {job_id}: {str(e)}")
+        # Update job status to failed
+        JOBS[job_id].status = "failed"
+        JOBS[job_id].error = str(e)
+        JOBS[job_id].progress = 0
+        
+        try:
+            await update_job(job_id, status="failed", error=str(e), progress=0)
+            print(f"✅ [CONTENT_ROUTE] Updated job {job_id} status to failed in database")
+        except Exception as db_error:
+            print(f"❌ [CONTENT_ROUTE] Failed to update job {job_id} status in database: {str(db_error)}")
+        
+        raise HTTPException(status_code=500, detail=f"Failed to start remedy job: {str(e)}")
+    
+    print(f"✅ [REMEDY_ROUTE] Returning job status for {job_id}: {JOBS[job_id]}")
     return JOBS[job_id]
 
 @router.get("/v1/jobs/{job_id}", response_model=JobStatus)
 async def job_status(job_id: str):
-    print(f"Checking status for job: {job_id}")
+    print(f"🔍 [JOB_STATUS] Checking status for job: {job_id}")
+    print(f"🔍 [JOB_STATUS] Available integrated jobs: {list(INTEGRATED_REMEDY_JOBS.keys())}")
+    print(f"🔍 [JOB_STATUS] Available regular jobs: {list(JOBS.keys())}")
     
+    # Check if it's an integrated remedy job first
+    integrated_job = INTEGRATED_REMEDY_JOBS.get(job_id)
+    if integrated_job:
+        print(f"✅ [JOB_STATUS] Integrated remedy job {job_id} found: {integrated_job.status}")
+        print(f"✅ [JOB_STATUS] Progress: {integrated_job.progress}, Error: {integrated_job.error}")
+        # Convert to JobStatus format for compatibility
+        return JobStatus(
+            job_id=integrated_job.job_id,
+            status=integrated_job.status,
+            progress=integrated_job.progress,
+            error=integrated_job.error,
+            result_doc_id=integrated_job.remedy_plan_id
+        )
+    
+    # Check regular jobs
     job = JOBS.get(job_id)
     if job:
-        print(f"Job {job_id} found in memory: {job.status}")
+        print(f"✅ [JOB_STATUS] Job {job_id} found in memory: {job.status}")
+        print(f"✅ [JOB_STATUS] Progress: {job.progress}, Error: {job.error}")
         return job
     
-    print(f"Job {job_id} not in memory, checking DB...")
+    print(f"🔍 [JOB_STATUS] Job {job_id} not in memory, checking DB...")
     # Fallback to DB if in-memory store doesn't have it (e.g., worker busy or restarted)
     try:
         db_job = await get_job(job_id)
         if not db_job:
-            print(f"Job {job_id} not found in DB either")
+            print(f"❌ [JOB_STATUS] Job {job_id} not found in DB either")
             raise HTTPException(404, "job not found")
         
-        print(f"Job {job_id} found in DB: {db_job.get('status')}")
+        print(f"✅ [JOB_STATUS] Job {job_id} found in DB: {db_job.get('status')}")
+        print(f"✅ [JOB_STATUS] DB Progress: {db_job.get('progress')}, Error: {db_job.get('error')}")
         # return a JobStatus-compatible shape
         return JobStatus(
             job_id=db_job.get("_id"),
@@ -102,8 +169,16 @@ async def job_status(job_id: str):
             result_doc_id=db_job.get("result_doc_id"),
         )
     except Exception as e:
-        print(f"Error getting job {job_id} from DB: {str(e)}")
+        print(f"❌ [JOB_STATUS] Error getting job {job_id} from DB: {str(e)}")
         raise HTTPException(404, "job not found")
+
+@router.get("/v1/debug/jobs")
+async def debug_jobs():
+    """Debug endpoint to see all jobs in memory"""
+    return {
+        "regular_jobs": {k: {"status": v.status, "progress": v.progress, "error": v.error} for k, v in JOBS.items()},
+        "integrated_remedy_jobs": {k: {"status": v.status, "progress": v.progress, "error": v.error} for k, v in INTEGRATED_REMEDY_JOBS.items()}
+    }
 
 
 @router.get("/v1/sessions/{session_id}/afterHourSession")
@@ -235,4 +310,83 @@ async def job_content(job_id: str, response: Response):
             "route": route,
             "content": None,
         }
+
+@router.get("/v1/remedyJobs/{job_id}/plans")
+async def get_remedy_plans(job_id: str):
+    """
+    Get the remediation plans generated by a completed remedy job.
+    """
+    print(f"Getting plans for remedy job: {job_id}")
+    
+    # Check if it's an integrated remedy job
+    integrated_job = INTEGRATED_REMEDY_JOBS.get(job_id)
+    if not integrated_job:
+        raise HTTPException(404, "Remedy job not found")
+    
+    if integrated_job.status != "completed":
+        raise HTTPException(202, f"Job not completed yet. Status: {integrated_job.status}")
+    
+    if not integrated_job.remedy_plan_id:
+        raise HTTPException(404, "No remedy plan found for this job")
+    
+    # Get remedy plan from database
+    from services.db_operations.remedy_db import get_remedy_plan
+    remedy_plan = await get_remedy_plan(integrated_job.remedy_plan_id)
+    
+    if not remedy_plan:
+        raise HTTPException(404, "Remedy plan not found")
+    
+    return {
+        "job_id": job_id,
+        "status": integrated_job.status,
+        "remedy_plan_id": integrated_job.remedy_plan_id,
+        "remedy_plans": remedy_plan.get("remediation_plans", []),
+        "content_job_ids": integrated_job.content_job_ids or []
+    }
+
+@router.get("/v1/remedyJobs/{job_id}/content")
+async def get_remedy_content(job_id: str):
+    """
+    Get the final content generated by Content Agent for this remedy job.
+    """
+    print(f"Getting content for remedy job: {job_id}")
+    
+    # Get integrated remedy job
+    integrated_job = INTEGRATED_REMEDY_JOBS.get(job_id)
+    if not integrated_job:
+        raise HTTPException(404, "Remedy job not found")
+    
+    if integrated_job.status != "completed":
+        raise HTTPException(202, f"Job not completed yet. Status: {integrated_job.status}")
+    
+    if not integrated_job.content_job_ids:
+        raise HTTPException(404, "No content jobs found for this remedy job")
+    
+    # Get content from each content job
+    content_results = []
+    for content_job_id in integrated_job.content_job_ids:
+        try:
+            # Reuse the existing job_content logic
+            content_result = await job_content(content_job_id, None)
+            content_results.append({
+                "content_job_id": content_job_id,
+                "content": content_result.get("content", {})
+            })
+        except Exception as e:
+            print(f"Error getting content for job {content_job_id}: {str(e)}")
+            content_results.append({
+                "content_job_id": content_job_id,
+                "error": str(e)
+            })
+    
+    # Get remedy plan details
+    from services.db_operations.remedy_db import get_remedy_plan
+    remedy_plan = await get_remedy_plan(integrated_job.remedy_plan_id) if integrated_job.remedy_plan_id else None
+    
+    return {
+        "job_id": job_id,
+        "remedy_plan_id": integrated_job.remedy_plan_id,
+        "remedy_plans": remedy_plan.get("remediation_plans", []) if remedy_plan else [],
+        "content_results": content_results
+    }
 
