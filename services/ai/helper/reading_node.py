@@ -5,7 +5,7 @@ import anyio
 from langchain_core.runnables import RunnableConfig
 from langchain_google_genai import ChatGoogleGenerativeAI
 from services.ai.schemas import LearnByReadingPayload
-from services.ai.helper.utils import persist_artifact
+from services.ai.helper.utils import persist_artifact, log_validation_result
 from services.ai.helper.teleprompt_with_media import search_image, bucket_name as MEDIA_BUCKET_NAME
 
 # LLM (provider/model can be swapped)
@@ -110,6 +110,7 @@ async def node_learn_by_reading(state, config: RunnableConfig) -> Dict[str, Any]
             validated = LearnByReadingPayload(**data)
             print(f"📖 [READING] Data validation passed")
             payload = validated.model_dump()
+            await log_validation_result("READING", True, None, {"len_sections": len(payload.get("sections", []))})
             print(f"📖 [READING] Final payload prepared")
             
         except json.JSONDecodeError as e:
@@ -117,12 +118,14 @@ async def node_learn_by_reading(state, config: RunnableConfig) -> Dict[str, Any]
             print(f"📖 [READING] Raw content that failed to parse: {raw_content}")
             # Create a fallback payload with the raw content
             payload = {"raw": raw_content}
+            await log_validation_result("READING", False, {"error": str(e)}, None)
             print(f"📖 [READING] Using raw content as fallback")
             
         except Exception as e:
             print(f"❌ [READING] Error processing LLM response: {str(e)}")
             print(f"📖 [READING] Raw content: {raw_content}")
             payload = {"raw": raw_content}
+            await log_validation_result("READING", False, {"error": str(e)}, None)
             print(f"📖 [READING] Using raw content as fallback")
     
     # Prepare minimal lesson context excerpt for visuals
@@ -162,7 +165,7 @@ async def node_learn_by_reading(state, config: RunnableConfig) -> Dict[str, Any]
                     lambda: search_image(
                         grade=grade_level,
                         query=f"explaining {gap_focus} concept",
-                        bucket_name=MEDIA_BUCKETNAME,
+                        bucket_name=MEDIA_BUCKET_NAME,
                         lesson_context=lesson_context,
                     )
                 )

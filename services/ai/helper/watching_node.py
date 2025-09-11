@@ -2,7 +2,7 @@ import os
 from typing import Dict, Any, List
 import anyio
 from langchain_core.runnables import RunnableConfig
-from services.ai.helper.utils import persist_artifact
+from services.ai.helper.utils import persist_artifact, log_validation_result
 from services.ai.helper.teleprompt_with_media import search_youtube_video
 
 async def node_learn_by_watching(state, config: RunnableConfig) -> Dict[str, Any]:
@@ -121,6 +121,13 @@ async def node_learn_by_watching(state, config: RunnableConfig) -> Dict[str, Any
         "search_terms": [topic] + gap_codes[:2] if topic else gap_codes[:2],
         "grade_level": grade,
     }
+    try:
+        # Minimal validation structure for watching
+        from services.ai.schemas import LearnByWatchingPayload
+        _ = LearnByWatchingPayload(videos=[{"url": v.get("url"), "title": v.get("title")} for v in payload["videos"]], summaries=[v.get("summary") for v in payload["videos"]])
+        await log_validation_result("WATCHING", True, None, {"videos": len(payload["videos"])})
+    except Exception as e:
+        await log_validation_result("WATCHING", False, {"error": str(e)}, None)
     
     print(f"📺 [WATCHING] Generated {len(videos)} video recommendations")
     print(f"📺 [WATCHING] Persisting artifact to database...")

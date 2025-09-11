@@ -10,7 +10,8 @@ async def create_remedy_plan(
     teacher_class_id: str,
     classified_gaps: List[Dict[str, Any]],
     remediation_plans: List[Dict[str, Any]],
-    context_refs: Optional[Dict[str, Any]] = None
+    context_refs: Optional[Dict[str, Any]] = None,
+    prerequisite_discoveries: Optional[Dict[str, Any]] = None
 ) -> str:
     """
     Create a new remedy plan document in the database.
@@ -23,6 +24,7 @@ async def create_remedy_plan(
             "classified_gaps": classified_gaps,
             "remediation_plans": remediation_plans,
             "context_refs": context_refs or {},
+            "prerequisite_discoveries": prerequisite_discoveries or {},
             "status": "created",
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),
@@ -100,6 +102,24 @@ async def get_remedy_plan(remedy_id: str) -> Optional[Dict[str, Any]]:
     except Exception as e:
         print(f"❌ [REMEDY_DB] Error getting remedy plan: {str(e)}")
         raise HTTPException(status_code=500, detail=f"DB error (get_remedy_plan): {str(e)}")
+
+async def get_latest_remedy_plan_for(student_id: str, teacher_class_id: str) -> Optional[Dict[str, Any]]:
+    """Find the most recent remedy plan for a given student and teacher_class_id."""
+    try:
+        def _find():
+            cursor = remedy_plans_collection.find({
+                "student_id": student_id,
+                "teacher_class_id": teacher_class_id
+            }).sort("created_at", -1).limit(1)
+            docs = list(cursor)
+            return docs[0] if docs else None
+        result = await anyio.to_thread.run_sync(_find)
+        if result:
+            result["_id"] = str(result["_id"])
+        return result
+    except Exception as e:
+        print(f"❌ [REMEDY_DB] Error getting latest remedy plan: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"DB error (get_latest_remedy_plan_for): {str(e)}")
 
 async def get_remedy_plans_by_student(student_id: str, limit: int = 10) -> List[Dict[str, Any]]:
     """

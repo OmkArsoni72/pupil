@@ -1,6 +1,6 @@
 from typing import Dict, Any
 from langchain_core.runnables import RunnableConfig
-from services.ai.helper.utils import persist_artifact
+from services.ai.helper.utils import persist_artifact, log_validation_result
 
 async def node_learn_by_playing(state, config: RunnableConfig) -> Dict[str, Any]:
     """
@@ -34,6 +34,12 @@ async def node_learn_by_playing(state, config: RunnableConfig) -> Dict[str, Any]
     print(f"🎮 [PLAYING] Persisting artifact to database...")
     
     await persist_artifact(state.route, "PLAYING", payload, state.req)
+    try:
+        from services.ai.schemas import LearnByPlayingPayload
+        _ = LearnByPlayingPayload(game_links=[url], objectives=[f"Practice {', '.join(gap_codes) if gap_codes else 'general'}"])
+        await log_validation_result("PLAYING", True, None, {"has_url": bool(url)})
+    except Exception as e:
+        await log_validation_result("PLAYING", False, {"error": str(e)}, None)
     print(f"✅ [PLAYING] Playing node completed successfully")
     
     return {}

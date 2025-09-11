@@ -3,7 +3,7 @@ import json
 from typing import Dict, Any
 from langchain_core.runnables import RunnableConfig
 from langchain_google_genai import ChatGoogleGenerativeAI
-from services.ai.helper.utils import persist_artifact
+from services.ai.helper.utils import persist_artifact, log_validation_result
 
 # LLM (provider/model can be swapped)
 LLM = ChatGoogleGenerativeAI(
@@ -111,6 +111,16 @@ async def node_learn_by_questioning_debating(state, config: RunnableConfig) -> D
 
     print(f"💭 [DEBATING] Persisting artifact to database...")
     await persist_artifact(state.route, "DEBATING", payload, state.req)
+    try:
+        from services.ai.schemas import LearnByDebatingPayload
+        # attempt validation if keys present
+        if all(k in payload for k in ("settings", "personas", "prompts")):
+            _ = LearnByDebatingPayload(**payload)
+            await log_validation_result("DEBATING", True, None, {"prompts": len(payload.get("prompts", []))})
+        else:
+            await log_validation_result("DEBATING", False, {"error": "missing keys"}, None)
+    except Exception as e:
+        await log_validation_result("DEBATING", False, {"error": str(e)}, None)
     print(f"✅ [DEBATING] Debating node completed successfully")
     
     return {}

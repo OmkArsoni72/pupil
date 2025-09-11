@@ -3,7 +3,7 @@ import json
 from typing import Dict, Any
 from langchain_core.runnables import RunnableConfig
 from langchain_google_genai import ChatGoogleGenerativeAI
-from services.ai.helper.utils import persist_artifact
+from services.ai.helper.utils import persist_artifact, log_validation_result
 
 # LLM (provider/model can be swapped)
 LLM = ChatGoogleGenerativeAI(
@@ -116,6 +116,13 @@ async def node_learn_by_solving(state, config: RunnableConfig) -> Dict[str, Any]
     except Exception:
         job_id = None
     payload = {"_meta": {"mode": "SOLVING", "job_id": job_id}, **payload}
+    # Validate structure
+    try:
+        from services.ai.schemas import LearnBySolvingPayload
+        _ = LearnBySolvingPayload(**payload | {k: v for k, v in payload.items() if k in ("problems", "scheduling_hints", "difficulty")})
+        await log_validation_result("SOLVING", True, None, {"problems": len(payload.get("problems", []))})
+    except Exception as e:
+        await log_validation_result("SOLVING", False, {"error": str(e)}, None)
 
     print(f"🧮 [SOLVING] Persisting artifact to database...")
     await persist_artifact(state.route, "SOLVING", payload, state.req)

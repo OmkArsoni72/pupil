@@ -10,6 +10,7 @@ from services.ai.job_runner import JOBS, JobStatus, run_job
 from services.ai.integrated_remedy_runner import INTEGRATED_REMEDY_JOBS, IntegratedRemedyJobStatus, run_integrated_remedy_job
 from services.db_operations.jobs_db import update_job
 from services.db_operations.jobs_db import create_job, get_job
+from services.db_operations.remedy_db import get_remedy_plan, get_latest_remedy_plan_for
 from services.ai.content_graph import Mode
 from fastapi import Response
 
@@ -135,13 +136,18 @@ async def job_status(job_id: str):
         print(f"✅ [JOB_STATUS] Integrated remedy job {job_id} found: {integrated_job.status}")
         print(f"✅ [JOB_STATUS] Progress: {integrated_job.progress}, Error: {integrated_job.error}")
         # Convert to JobStatus format for compatibility
-        return JobStatus(
+        # Enrich with aggregated child info if available
+        agg = await get_remedy_plan(integrated_job.remedy_plan_id) if integrated_job.remedy_plan_id else None
+        result = JobStatus(
             job_id=integrated_job.job_id,
             status=integrated_job.status,
             progress=integrated_job.progress,
             error=integrated_job.error,
             result_doc_id=integrated_job.remedy_plan_id
         )
+        # Attach aggregated view as headers-like payload (compatible with response_model)
+        # Clients wanting full aggregation should call /v1/jobs/{job_id}/aggregate
+        return result
     
     # Check regular jobs
     job = JOBS.get(job_id)
@@ -320,8 +326,35 @@ async def get_remedy_plans(job_id: str):
     
     # Check if it's an integrated remedy job
     integrated_job = INTEGRATED_REMEDY_JOBS.get(job_id)
+    # Fallback: rebuild minimal integrated view from DB if memory was reset
     if not integrated_job:
-        raise HTTPException(404, "Remedy job not found")
+        db_job = await get_job(job_id)
+        if not db_job:
+            raise HTTPException(404, "Remedy job not found")
+        remedy_plan_id = db_job.get("result_doc_id")
+        remedy_plan = await get_remedy_plan(remedy_plan_id) if remedy_plan_id else None
+        if not remedy_plan:
+            # Fallback to latest by (student_id, teacher_class_id)
+            payload = db_job.get("payload") or {}
+            latest = await get_latest_remedy_plan_for(payload.get("student_id"), payload.get("teacher_class_id"))
+            if not latest:
+                raise HTTPException(202, f"Job not completed yet. Status: {db_job.get('status')}")
+            remedy_plan = latest
+            remedy_plan_id = latest.get("_id")
+        if not remedy_plan:
+            raise HTTPException(404, "Remedy plan not found")
+        child_jobs = remedy_plan.get("content_job_ids", [])
+        return {
+            "job_id": job_id,
+            "status": db_job.get("status"),
+            "remedy_plan_id": remedy_plan_id,
+            "strategy": {
+                "classified_gaps": remedy_plan.get("classified_gaps", []),
+                "plans": remedy_plan.get("remediation_plans", [])
+            },
+            "orchestration": {"child_jobs": child_jobs},
+            "prerequisite_discoveries": remedy_plan.get("prerequisite_discoveries", {})
+        }
     
     if integrated_job.status != "completed":
         raise HTTPException(202, f"Job not completed yet. Status: {integrated_job.status}")
@@ -330,18 +363,106 @@ async def get_remedy_plans(job_id: str):
         raise HTTPException(404, "No remedy plan found for this job")
     
     # Get remedy plan from database
-    from services.db_operations.remedy_db import get_remedy_plan
     remedy_plan = await get_remedy_plan(integrated_job.remedy_plan_id)
     
     if not remedy_plan:
         raise HTTPException(404, "Remedy plan not found")
     
+    # Structured list of child mode jobs (F3) and high-level strategy (F1)
+    plans = remedy_plan.get("remediation_plans", [])
+    child_jobs = integrated_job.content_job_ids or []
+    prerequisite_discoveries = remedy_plan.get("prerequisite_discoveries", {})
     return {
         "job_id": job_id,
         "status": integrated_job.status,
         "remedy_plan_id": integrated_job.remedy_plan_id,
-        "remedy_plans": remedy_plan.get("remediation_plans", []),
-        "content_job_ids": integrated_job.content_job_ids or []
+        "strategy": {
+            "classified_gaps": remedy_plan.get("classified_gaps", []),
+            "plans": plans
+        },
+        "orchestration": {
+            "child_jobs": child_jobs
+        },
+        "prerequisite_discoveries": prerequisite_discoveries
+    }
+
+@router.get("/v1/jobs/{job_id}/aggregate")
+async def job_aggregate(job_id: str):
+    """Aggregated parent job view: plans, child jobs, content specs, and RAG outputs."""
+    integrated_job = INTEGRATED_REMEDY_JOBS.get(job_id)
+    if not integrated_job:
+        # Fallback using DB
+        db_job = await get_job(job_id)
+        if not db_job:
+            raise HTTPException(404, "Remedy job not found")
+        remedy_plan_id = db_job.get("result_doc_id")
+        remedy_plan = await get_remedy_plan(remedy_plan_id) if remedy_plan_id else None
+        if not remedy_plan:
+            payload = db_job.get("payload") or {}
+            latest = await get_latest_remedy_plan_for(payload.get("student_id"), payload.get("teacher_class_id"))
+            if not latest:
+                raise HTTPException(202, f"Job not completed yet. Status: {db_job.get('status')}")
+            remedy_plan = latest
+            remedy_plan_id = latest.get("_id")
+        if not remedy_plan:
+            raise HTTPException(404, "Remedy plan not found")
+        child_ids = remedy_plan.get("content_job_ids", [])
+        content_results = []
+        for cid in child_ids:
+            try:
+                content_result = await job_content(cid, None)
+                content_results.append({"content_job_id": cid, "content": content_result.get("content", {})})
+            except Exception as e:
+                content_results.append({"content_job_id": cid, "error": str(e)})
+        return {
+            "job": {
+                "job_id": job_id,
+                "status": db_job.get("status"),
+                "progress": db_job.get("progress"),
+                "error": db_job.get("error"),
+                "remedy_plan_id": remedy_plan_id,
+            },
+            "strategy": {
+                "classified_gaps": remedy_plan.get("classified_gaps", []),
+                "plans": remedy_plan.get("remediation_plans", [])
+            },
+            "orchestration": {"child_jobs": child_ids},
+            "prerequisite_discoveries": remedy_plan.get("prerequisite_discoveries", {}),
+            "content_specs": content_results
+        }
+    remedy_plan = await get_remedy_plan(integrated_job.remedy_plan_id) if integrated_job.remedy_plan_id else None
+    if not remedy_plan:
+        raise HTTPException(404, "Remedy plan not found")
+
+    # Try to collect content results for each child (best-effort)
+    content_results = []
+    for content_job_id in (integrated_job.content_job_ids or []):
+        try:
+            content_result = await job_content(content_job_id, None)  # reuse handler
+            content_results.append({
+                "content_job_id": content_job_id,
+                "content": content_result.get("content", {})
+            })
+        except Exception as e:
+            content_results.append({"content_job_id": content_job_id, "error": str(e)})
+
+    return {
+        "job": {
+            "job_id": integrated_job.job_id,
+            "status": integrated_job.status,
+            "progress": integrated_job.progress,
+            "error": integrated_job.error,
+            "remedy_plan_id": integrated_job.remedy_plan_id,
+        },
+        "strategy": {
+            "classified_gaps": remedy_plan.get("classified_gaps", []),
+            "plans": remedy_plan.get("remediation_plans", [])
+        },
+        "orchestration": {
+            "child_jobs": integrated_job.content_job_ids or []
+        },
+        "prerequisite_discoveries": remedy_plan.get("prerequisite_discoveries", {}),
+        "content_specs": content_results
     }
 
 @router.get("/v1/remedyJobs/{job_id}/content")

@@ -8,6 +8,8 @@ from langgraph.checkpoint.memory import MemorySaver
 
 # Import Content Agent for integration
 from services.ai.content_graph import build_graph as build_content_graph, CHECKPOINTER as CONTENT_CHECKPOINTER
+from services.db_operations.base import remediation_logs_collection
+import anyio
 
 # LLM for Remedy Agent
 REMEDY_LLM = ChatGoogleGenerativeAI(
@@ -78,11 +80,11 @@ GAP_TYPE_KEYWORDS = {
 
 MODE_STRATEGIES = {
     "knowledge": ["learn_by_reading", "learn_by_watching", "learning_by_assessment"],
-    "conceptual": ["learn_by_questioning_debating", "learn_by_doing", "learn_by_reading"],
-    "application": ["learn_by_solving", "learn_by_playing", "learn_by_doing"],
-    "foundational": ["learn_by_reading", "learn_by_watching"],  # Will escalate to RAG
-    "retention": ["learn_by_reading", "learn_by_solving", "learn_by_playing"],
-    "engagement": ["learn_by_playing", "learn_by_listening_speaking", "learn_by_watching"]
+    "conceptual": ["learn_by_questioning_debating", "learn_by_doing", "learn_by_reading", "learning_by_assessment"],
+    "application": ["learn_by_solving", "learn_by_playing", "learn_by_doing", "learning_by_assessment"],
+    "foundational": ["learn_by_reading", "learn_by_watching"],  # escalate later
+    "retention": ["learn_by_reading", "learn_by_solving", "learn_by_playing", "learning_by_assessment"],
+    "engagement": ["learn_by_playing", "learn_by_listening_speaking", "learn_by_watching", "learning_by_assessment"]
 }
 
 async def gap_classifier_node(state: RemedyState, config: RunnableConfig) -> Dict[str, Any]:
@@ -257,6 +259,9 @@ async def prerequisite_discovery_node(state: RemedyState, config: RunnableConfig
             # Update plan with prerequisite information
             plan.content_specifications["prerequisites"] = prerequisites
             plan.content_specifications["escalation_level"] = 1
+            # Insert assessment checkpoint after prerequisites remediation
+            if "learning_by_assessment" not in plan.selected_modes:
+                plan.selected_modes = plan.selected_modes + ["learning_by_assessment"]
             
             print(f"🔍 [PREREQUISITE_DISCOVERY] Found {len(prerequisites)} prerequisites")
         
@@ -311,8 +316,7 @@ async def content_agent_integration_node(state: RemedyState, config: RunnableCon
             }
         }
         
-        # TODO: Actually invoke Content Agent
-        # For now, simulate job creation
+        # Simulate job creation (actual invocation handled by integrated runner)
         job_id = f"CONTENT_JOB_{i+1}_{plan.gap_type}"
         content_job_ids.append(job_id)
         
@@ -320,6 +324,24 @@ async def content_agent_integration_node(state: RemedyState, config: RunnableCon
     
     print(f"✅ [CONTENT_INTEGRATION] Created {len(content_job_ids)} content jobs")
     return {"content_job_ids": content_job_ids}
+
+
+async def _log_assessment_outcome(plan_id: str, student_id: str, gap_type: str, cycle: int, result: Dict[str, Any]):
+    """Store assessment checkpoint outcomes to MongoDB remediation_logs."""
+    try:
+        doc = {
+            "plan_id": plan_id,
+            "student_id": student_id,
+            "gap_type": gap_type,
+            "cycle": cycle,
+            "result": result,
+            "timestamp": __import__("datetime").datetime.utcnow().isoformat(),
+        }
+        def _insert():
+            return remediation_logs_collection.insert_one(doc)
+        await anyio.to_thread.run_sync(_insert)
+    except Exception as e:
+        print(f"⚠️ [REMEDY_GRAPH] Failed to log assessment outcome: {e}")
 
 async def finalizer_node(state: RemedyState, config: RunnableConfig) -> Dict[str, Any]:
     """

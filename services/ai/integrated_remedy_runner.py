@@ -97,7 +97,8 @@ async def run_integrated_remedy_job(
             teacher_class_id=teacher_class_id,
             classified_gaps=classified_gaps,
             remediation_plans=[plan.model_dump() if hasattr(plan, 'model_dump') else plan for plan in remedy_result.get('final_plans', [])],
-            context_refs=context_refs or {}
+            context_refs=context_refs or {},
+            prerequisite_discoveries=remedy_result.get('prerequisite_discoveries', {})
         )
         
         INTEGRATED_REMEDY_JOBS[job_id].remedy_plan_id = remedy_plan_id
@@ -173,7 +174,7 @@ async def run_integrated_remedy_job(
         INTEGRATED_REMEDY_JOBS[job_id].status = "completed"
         INTEGRATED_REMEDY_JOBS[job_id].progress = 100
         
-        await update_job(job_id, status="completed", progress=100)
+        await update_job(job_id, status="completed", progress=100, result_doc_id=remedy_plan_id)
         await update_remedy_plan_status(remedy_id=remedy_plan_id, status="completed")
         
         print(f"✅ [INTEGRATED_REMEDY] Integrated remedy job {job_id} completed successfully")

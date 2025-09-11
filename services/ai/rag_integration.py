@@ -7,6 +7,8 @@ from typing import Dict, Any, List, Optional
 import os
 from pydantic import BaseModel
 from langchain_google_genai import ChatGoogleGenerativeAI
+from services.db_operations.base import prerequisite_cache_collection
+import anyio
 
 # LLM for RAG operations
 RAG_LLM = ChatGoogleGenerativeAI(
@@ -36,6 +38,17 @@ async def discover_prerequisites(gap_code: str, grade_level: str, subject: Optio
     """
     print(f"🔍 [RAG] Discovering prerequisites for gap: {gap_code}")
     
+    # Check cache first
+    try:
+        def _find_cache():
+            return prerequisite_cache_collection.find_one({"gap_code": gap_code, "grade_level": grade_level, "subject": subject})
+        cached = await anyio.to_thread.run_sync(_find_cache)
+        if cached and isinstance(cached.get("prerequisites"), list) and cached.get("prerequisites"):
+            print(f"🔍 [RAG] Using cached prerequisites for {gap_code}")
+            return cached["prerequisites"]
+    except Exception as _e:
+        print(f"⚠️ [RAG] Cache lookup failed: {_e}")
+
     # Build RAG query
     query = f"""
     For a student in grade {grade_level} struggling with: {gap_code}
@@ -64,12 +77,35 @@ async def discover_prerequisites(gap_code: str, grade_level: str, subject: Optio
         prerequisites = _parse_rag_response(response.content, gap_code)
         
         print(f"🔍 [RAG] Found {len(prerequisites)} prerequisites")
+        # Persist to cache
+        try:
+            def _upsert():
+                return prerequisite_cache_collection.update_one(
+                    {"gap_code": gap_code, "grade_level": grade_level, "subject": subject},
+                    {"$set": {"gap_code": gap_code, "grade_level": grade_level, "subject": subject, "prerequisites": prerequisites}},
+                    upsert=True,
+                )
+            await anyio.to_thread.run_sync(_upsert)
+        except Exception as ce:
+            print(f"⚠️ [RAG] Failed to cache prerequisites: {ce}")
         return prerequisites
         
     except Exception as e:
         print(f"❌ [RAG] Error in prerequisite discovery: {str(e)}")
         # Return fallback prerequisites
-        return _get_fallback_prerequisites(gap_code, grade_level)
+        fall = _get_fallback_prerequisites(gap_code, grade_level)
+        # Try to cache fallback as well to avoid repeated calls
+        try:
+            def _upsert_f():
+                return prerequisite_cache_collection.update_one(
+                    {"gap_code": gap_code, "grade_level": grade_level, "subject": subject},
+                    {"$set": {"gap_code": gap_code, "grade_level": grade_level, "subject": subject, "prerequisites": fall}},
+                    upsert=True,
+                )
+            await anyio.to_thread.run_sync(_upsert_f)
+        except Exception as ce:
+            print(f"⚠️ [RAG] Failed to cache fallback prerequisites: {ce}")
+        return fall
 
 def _parse_rag_response(response_text: str, gap_code: str) -> List[Dict[str, Any]]:
     """
