@@ -3,7 +3,8 @@ import json
 from typing import Dict, Any, List, Optional
 from langchain_core.runnables import RunnableConfig
 from langchain_google_genai import ChatGoogleGenerativeAI
-from services.ai.helper.utils import persist_artifact
+from services.ai.helper.utils import persist_artifact, log_validation_result
+from services.ai.schemas import LearnByAssessmentPayload
 
 # DB access for pulling prior artifacts
 from services.db_operations.base import (
@@ -208,6 +209,12 @@ async def node_learning_by_assessment(state, config: RunnableConfig) -> Dict[str
 
     print(f"📝 [ASSESSMENT] Persisting artifact to database...")
     await persist_artifact(state.route, "ASSESSMENT", payload, state.req)
+    # Validate assessment payload (best-effort) and log
+    try:
+        _ = LearnByAssessmentPayload(questions=payload.get("questions", []), coverage_summary=payload.get("coverage_summary", []))
+        await log_validation_result("ASSESSMENT", True, None, {"questions": len(payload.get("questions", []))})
+    except Exception as e:
+        await log_validation_result("ASSESSMENT", False, {"error": str(e)}, None)
     print(f"✅ [ASSESSMENT] Assessment node completed successfully")
 
     return {}

@@ -4,7 +4,7 @@ from typing import Dict, Any
 from langchain_core.runnables import RunnableConfig
 from langchain_google_genai import ChatGoogleGenerativeAI
 from services.ai.schemas import LearnByDoingPayload
-from services.ai.helper.utils import persist_artifact
+from services.ai.helper.utils import persist_artifact, log_validation_result
 
 # LLM (provider/model can be swapped)
 LLM = ChatGoogleGenerativeAI(
@@ -86,6 +86,7 @@ async def node_learn_by_doing(state, config: RunnableConfig) -> Dict[str, Any]:
             validated = LearnByDoingPayload(**data)
             print(f"🔬 [DOING] Data validation passed")
             payload = validated.model_dump()
+            await log_validation_result("DOING", True, None, {"steps": len(payload.get("steps", []))})
             print(f"🔬 [DOING] Final payload prepared")
             
         except json.JSONDecodeError as e:
@@ -93,12 +94,14 @@ async def node_learn_by_doing(state, config: RunnableConfig) -> Dict[str, Any]:
             print(f"🔬 [DOING] Raw content that failed to parse: {raw_content}")
             # Create a fallback payload with the raw content
             payload = {"raw": raw_content}
+            await log_validation_result("DOING", False, {"error": str(e)}, None)
             print(f"🔬 [DOING] Using raw content as fallback")
             
         except Exception as e:
             print(f"❌ [DOING] Error processing LLM response: {str(e)}")
             print(f"🔬 [DOING] Raw content: {raw_content}")
             payload = {"raw": raw_content}
+            await log_validation_result("DOING", False, {"error": str(e)}, None)
             print(f"🔬 [DOING] Using raw content as fallback")
     
     # Traceability

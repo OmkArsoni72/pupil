@@ -70,3 +70,17 @@ class LearnByDebatingPayload(BaseModel):
     difficulty: Optional[str] = Field(default=None)
 
 
+class AssessmentQuestion(BaseModel):
+    type: str
+    difficulty: str
+    stem: str
+    options: Optional[List[str]] = None
+    answer: str
+    explanation: str
+
+class LearnByAssessmentPayload(BaseModel):
+    questions: List[AssessmentQuestion] = Field(default_factory=list)
+    coverage_summary: List[str] = Field(default_factory=list)
+    difficulty: Optional[str] = Field(default=None)
+
+

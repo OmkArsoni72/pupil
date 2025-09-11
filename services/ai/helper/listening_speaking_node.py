@@ -4,7 +4,7 @@ from typing import Dict, Any
 from langchain_core.runnables import RunnableConfig
 from langchain_google_genai import ChatGoogleGenerativeAI
 from services.ai.schemas import LearnByListeningSpeakingPayload
-from services.ai.helper.utils import persist_artifact
+from services.ai.helper.utils import persist_artifact, log_validation_result
 
 # LLM (provider/model can be swapped)
 LLM = ChatGoogleGenerativeAI(
@@ -83,6 +83,7 @@ async def node_learn_by_listening_speaking(state, config: RunnableConfig) -> Dic
             validated = LearnByListeningSpeakingPayload(**data)
             print(f"🎧 [LISTENING_SPEAKING] Data validation passed")
             payload = validated.model_dump()
+            await log_validation_result("AUDIO", True, None, {"verbal_checks": len(payload.get("verbal_checks", []))})
             print(f"🎧 [LISTENING_SPEAKING] Final payload prepared")
             
         except json.JSONDecodeError as e:
@@ -90,12 +91,14 @@ async def node_learn_by_listening_speaking(state, config: RunnableConfig) -> Dic
             print(f"🎧 [LISTENING_SPEAKING] Raw content that failed to parse: {raw_content}")
             # Create a fallback payload with the raw content
             payload = {"script": raw_content, "verbal_checks": []}
+            await log_validation_result("AUDIO", False, {"error": str(e)}, None)
             print(f"🎧 [LISTENING_SPEAKING] Using raw content as fallback")
             
         except Exception as e:
             print(f"❌ [LISTENING_SPEAKING] Error processing LLM response: {str(e)}")
             print(f"🎧 [LISTENING_SPEAKING] Raw content: {raw_content}")
             payload = {"script": raw_content, "verbal_checks": []}
+            await log_validation_result("AUDIO", False, {"error": str(e)}, None)
             print(f"🎧 [LISTENING_SPEAKING] Using raw content as fallback")
     
     # Traceability
