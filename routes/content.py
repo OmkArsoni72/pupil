@@ -446,6 +446,25 @@ async def job_aggregate(job_id: str):
         except Exception as e:
             content_results.append({"content_job_id": content_job_id, "error": str(e)})
 
+    # Collect validation summaries for F4
+    validation_summaries = []
+    try:
+        from services.db_operations.base import validation_logs_collection
+        import anyio
+        def _get_validation_logs():
+            cursor = validation_logs_collection.find({}).sort("timestamp", -1).limit(20)
+            return list(cursor)
+        validation_logs = await anyio.to_thread.run_sync(_get_validation_logs)
+        for log in validation_logs:
+            validation_summaries.append({
+                "mode": log.get("mode"),
+                "is_valid": log.get("is_valid"),
+                "timestamp": log.get("timestamp"),
+                "metadata": log.get("metadata", {})
+            })
+    except Exception as e:
+        print(f"⚠️ [AGGREGATE] Failed to fetch validation logs: {e}")
+
     return {
         "job": {
             "job_id": integrated_job.job_id,
@@ -462,7 +481,8 @@ async def job_aggregate(job_id: str):
             "child_jobs": integrated_job.content_job_ids or []
         },
         "prerequisite_discoveries": remedy_plan.get("prerequisite_discoveries", {}),
-        "content_specs": content_results
+        "content_specs": content_results,
+        "validation_summaries": validation_summaries
     }
 
 @router.get("/v1/remedyJobs/{job_id}/content")

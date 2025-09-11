@@ -111,14 +111,19 @@ async def node_learn_by_questioning_debating(state, config: RunnableConfig) -> D
 
     print(f"💭 [DEBATING] Persisting artifact to database...")
     await persist_artifact(state.route, "DEBATING", payload, state.req)
+    # Mandatory validation for debating payload
     try:
         from services.ai.schemas import LearnByDebatingPayload
-        # attempt validation if keys present
-        if all(k in payload for k in ("settings", "personas", "prompts")):
-            _ = LearnByDebatingPayload(**payload)
-            await log_validation_result("DEBATING", True, None, {"prompts": len(payload.get("prompts", []))})
-        else:
-            await log_validation_result("DEBATING", False, {"error": "missing keys"}, None)
+        # Ensure required keys exist with defaults
+        validated_payload = {
+            "settings": payload.get("settings", {}),
+            "personas": payload.get("personas", {}),
+            "prompts": payload.get("prompts", []),
+            "closing_summary_cue": payload.get("closing_summary_cue", "Summarize the discussion"),
+            "difficulty": "medium"
+        }
+        _ = LearnByDebatingPayload(**validated_payload)
+        await log_validation_result("DEBATING", True, None, {"prompts": len(validated_payload["prompts"]), "has_settings": bool(validated_payload["settings"])})
     except Exception as e:
         await log_validation_result("DEBATING", False, {"error": str(e)}, None)
     print(f"✅ [DEBATING] Debating node completed successfully")

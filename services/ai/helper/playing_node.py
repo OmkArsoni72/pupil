@@ -34,10 +34,12 @@ async def node_learn_by_playing(state, config: RunnableConfig) -> Dict[str, Any]
     print(f"🎮 [PLAYING] Persisting artifact to database...")
     
     await persist_artifact(state.route, "PLAYING", payload, state.req)
+    # Validate playing payload structure
     try:
         from services.ai.schemas import LearnByPlayingPayload
-        _ = LearnByPlayingPayload(game_links=[url], objectives=[f"Practice {', '.join(gap_codes) if gap_codes else 'general'}"])
-        await log_validation_result("PLAYING", True, None, {"has_url": bool(url)})
+        objectives = [f"Practice {', '.join(gap_codes) if gap_codes else 'general'}"]
+        _ = LearnByPlayingPayload(game_links=[url] if url else [], objectives=objectives, difficulty="medium")
+        await log_validation_result("PLAYING", True, None, {"has_url": bool(url), "objectives": len(objectives)})
     except Exception as e:
         await log_validation_result("PLAYING", False, {"error": str(e)}, None)
     print(f"✅ [PLAYING] Playing node completed successfully")

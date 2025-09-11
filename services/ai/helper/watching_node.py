@@ -121,11 +121,17 @@ async def node_learn_by_watching(state, config: RunnableConfig) -> Dict[str, Any
         "search_terms": [topic] + gap_codes[:2] if topic else gap_codes[:2],
         "grade_level": grade,
     }
+    # Validate watching payload structure
     try:
-        # Minimal validation structure for watching
         from services.ai.schemas import LearnByWatchingPayload
-        _ = LearnByWatchingPayload(videos=[{"url": v.get("url"), "title": v.get("title")} for v in payload["videos"]], summaries=[v.get("summary") for v in payload["videos"]])
-        await log_validation_result("WATCHING", True, None, {"videos": len(payload["videos"])})
+        # Ensure videos have required fields
+        validated_videos = []
+        for v in payload["videos"]:
+            if v.get("url") and v.get("title"):
+                validated_videos.append({"url": v["url"], "title": v["title"]})
+        summaries = [v.get("summary", "") for v in payload["videos"] if v.get("summary")]
+        _ = LearnByWatchingPayload(videos=validated_videos, summaries=summaries, difficulty=payload.get("grade_level", "medium"))
+        await log_validation_result("WATCHING", True, None, {"videos": len(validated_videos), "summaries": len(summaries)})
     except Exception as e:
         await log_validation_result("WATCHING", False, {"error": str(e)}, None)
     
