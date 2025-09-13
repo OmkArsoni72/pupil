@@ -35,14 +35,30 @@ async def orchestrator_node(state, config: RunnableConfig) -> Dict[str, Any]:
             return {"dependencies_ok": False}
         print(f"✅ [ORCHESTRATOR] REMEDY validation passed")
 
-    # Select modes as requested (you can auto-augment here if needed)
+    # F3: Select modes with orchestration support
     selected_modes = req["modes"]
     print(f"🔧 [ORCHESTRATOR] Selected modes: {selected_modes}")
 
+    # F3: Extract F3 orchestration specifications if available
+    f3_specs = req.get("options", {}).get("content_specifications", {})
+    gap_type = req.get("options", {}).get("gap_type")
+    
     # Build lightweight context bundle from refs for use in prompts
     context_refs = req.get("context_refs") or {}
     context_bundle = await build_context_bundle(context_refs)
-    print(f"🔧 [ORCHESTRATOR] Context bundle prepared: lesson_script={bool(context_bundle.get('lesson_script'))}, in_class_qs={len(context_bundle.get('in_class_questions', []))}, recent_sessions={len(context_bundle.get('recent_sessions', []))}")
+    
+    # F3: Add F3 orchestration metadata to context bundle
+    if f3_specs and gap_type:
+        context_bundle["f3_orchestration"] = {
+            "gap_type": gap_type,
+            "content_requirements": f3_specs.get("content_requirements", {}),
+            "mode_coordination": f3_specs.get("mode_coordination", ""),
+            "assessment_focus": f3_specs.get("assessment_focus", ""),
+            "mode_sequence": f3_specs.get("mode_sequence", selected_modes)
+        }
+        print(f"🔧 [ORCHESTRATOR] F3: Added orchestration specs for {gap_type} gap")
+    
+    print(f"🔧 [ORCHESTRATOR] Context bundle prepared: lesson_script={bool(context_bundle.get('lesson_script'))}, in_class_qs={len(context_bundle.get('in_class_questions', []))}, recent_sessions={len(context_bundle.get('recent_sessions', []))}, f3_orchestration={bool(context_bundle.get('f3_orchestration'))}")
 
     # Diagnostics for Remedy: minimal rules-based classifier
     if route == "REMEDY":

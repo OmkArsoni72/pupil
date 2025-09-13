@@ -27,12 +27,22 @@ async def node_learn_by_solving(state, config: RunnableConfig) -> Dict[str, Any]
     progressive_difficulty = problem_opts.get("progressive_difficulty", True)
     learning_gaps = req.get("learning_gaps") or []
     context_bundle = req.get("context_bundle") or {}
+    
+    # F3: Extract F3 orchestration specifications for gap-specific content
+    f3_orchestration = context_bundle.get("f3_orchestration", {})
+    gap_type = f3_orchestration.get("gap_type", "unknown")
+    content_requirements = f3_orchestration.get("content_requirements", {}).get("solving", {})
+    mode_coordination = f3_orchestration.get("mode_coordination", "")
+    
     gap_codes = []
     for g in learning_gaps:
         if isinstance(g, str):
             gap_codes.append(g)
         elif isinstance(g, dict) and g.get("code"):
             gap_codes.append(g["code"])
+    
+    print(f"🧮 [SOLVING] F3: Gap type: {gap_type}, Mode coordination: {mode_coordination}")
+    print(f"🧮 [SOLVING] F3: Content requirements: {content_requirements}")
 
     print(f"🧮 [SOLVING] Topic: {topic}")
     print(f"🧮 [SOLVING] Problem count: {count}")
@@ -48,8 +58,42 @@ async def node_learn_by_solving(state, config: RunnableConfig) -> Dict[str, Any]
 
     if state.route == "REMEDY":
         focus = ", ".join(gap_codes) if gap_codes else topic
+        
+        # F3: Build gap-specific problem generation instructions
+        f3_problem_instruction = ""
+        if gap_type == "application":
+            f3_problem_instruction = "Focus on practical application and real-world problem-solving. Create problems that require students to apply knowledge to solve practical, hands-on problems. Include step-by-step solutions and real-world scenarios."
+        elif gap_type == "conceptual":
+            f3_problem_instruction = "Focus on conceptual understanding and relationships. Create problems that test understanding of concepts, relationships, and underlying principles."
+        elif gap_type == "knowledge":
+            f3_problem_instruction = "Focus on factual knowledge and information recall. Create problems that test knowledge of facts, terms, and basic information."
+        elif gap_type == "foundational":
+            f3_problem_instruction = "Focus on foundational knowledge and prerequisites. Create problems that test basic concepts and foundational understanding."
+        elif gap_type == "retention":
+            f3_problem_instruction = "Focus on memory and retention. Create problems that reinforce learning through spaced repetition and memory techniques."
+        elif gap_type == "engagement":
+            f3_problem_instruction = "Focus on engagement and motivation. Create problems that are interesting, interactive, and encourage active participation."
+        else:
+            f3_problem_instruction = "Create problems that help students practice and apply their knowledge."
+        
+        # F3: Add content requirements
+        f3_requirements = []
+        if content_requirements.get("progressive_difficulty"):
+            f3_requirements.append("Ensure progressive difficulty from easy to challenging")
+        if content_requirements.get("step_by_step_solutions"):
+            f3_requirements.append("Include detailed step-by-step solutions")
+        if content_requirements.get("spaced_repetition"):
+            f3_requirements.append("Include spaced repetition techniques")
+        if content_requirements.get("memory_reinforcement"):
+            f3_requirements.append("Include memory reinforcement strategies")
+        
+        f3_requirements_text = f"F3 Requirements: {', '.join(f3_requirements)}" if f3_requirements else ""
+        
         prompt = (
-            f"Create {count} problems tightly focused on fixing the misconception(s): {focus}. "
+            f"Create {count} problems tightly focused on fixing {gap_type} misconception(s): {focus}. "
+            f"Gap Type: {gap_type}. Mode Coordination: {mode_coordination}. "
+            f"{f3_problem_instruction} "
+            f"{f3_requirements_text} "
             f"Use these problem types: {', '.join(preferred_types)}. "
             f"Ensure progressive difficulty: start easy, end challenging. "
             f"{context_info}"

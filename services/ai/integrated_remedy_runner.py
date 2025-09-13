@@ -166,16 +166,67 @@ async def run_integrated_remedy_job(
             content_job_ids=content_job_ids
         )
         
-        # Step 4: Wait for content jobs to complete (simplified - in production, use proper job monitoring)
-        print(f"🚀 [INTEGRATED_REMEDY] Step 3: Content jobs created, monitoring completion...")
+        # Step 4: Wait for content jobs to complete
+        print(f"🚀 [INTEGRATED_REMEDY] Step 3: Monitoring content job completion...")
         
-        # For now, mark as completed since content jobs are running asynchronously
-        # In production, you'd want to monitor the actual completion of content jobs
-        INTEGRATED_REMEDY_JOBS[job_id].status = "completed"
-        INTEGRATED_REMEDY_JOBS[job_id].progress = 100
+        # Update status to indicate content jobs are running
+        INTEGRATED_REMEDY_JOBS[job_id].status = "content_generation"
+        INTEGRATED_REMEDY_JOBS[job_id].progress = 60
+        await update_job(job_id, status="content_generation", progress=60, result_doc_id=remedy_plan_id)
         
-        await update_job(job_id, status="completed", progress=100, result_doc_id=remedy_plan_id)
-        await update_remedy_plan_status(remedy_id=remedy_plan_id, status="completed")
+        # Wait for all content jobs to complete
+        max_wait_time = 300  # 5 minutes max wait
+        check_interval = 5   # Check every 5 seconds
+        elapsed_time = 0
+        
+        while elapsed_time < max_wait_time:
+            all_completed = True
+            completed_count = 0
+            
+            for content_job_id in content_job_ids:
+                try:
+                    # Check job status from database
+                    content_job = await get_job(content_job_id)
+                    if content_job:
+                        job_status = content_job.get("status", "pending")
+                        if job_status == "completed":
+                            completed_count += 1
+                        elif job_status == "failed":
+                            print(f"⚠️ [INTEGRATED_REMEDY] Content job {content_job_id} failed")
+                        else:
+                            all_completed = False
+                    else:
+                        all_completed = False
+                except Exception as e:
+                    print(f"⚠️ [INTEGRATED_REMEDY] Error checking content job {content_job_id}: {str(e)}")
+                    all_completed = False
+            
+            # Update progress based on completed jobs
+            progress = 60 + int((completed_count / len(content_job_ids)) * 35)  # 60-95%
+            INTEGRATED_REMEDY_JOBS[job_id].progress = progress
+            await update_job(job_id, progress=progress)
+            
+            print(f"🚀 [INTEGRATED_REMEDY] Content jobs progress: {completed_count}/{len(content_job_ids)} completed")
+            
+            if all_completed:
+                break
+                
+            await asyncio.sleep(check_interval)
+            elapsed_time += check_interval
+        
+        if all_completed:
+            # All content jobs completed successfully
+            INTEGRATED_REMEDY_JOBS[job_id].status = "completed"
+            INTEGRATED_REMEDY_JOBS[job_id].progress = 100
+            await update_job(job_id, status="completed", progress=100, result_doc_id=remedy_plan_id)
+            await update_remedy_plan_status(remedy_id=remedy_plan_id, status="completed")
+            print(f"✅ [INTEGRATED_REMEDY] All content jobs completed successfully")
+        else:
+            # Timeout or some jobs failed
+            INTEGRATED_REMEDY_JOBS[job_id].status = "partial_completion"
+            INTEGRATED_REMEDY_JOBS[job_id].progress = 95
+            await update_job(job_id, status="partial_completion", progress=95, result_doc_id=remedy_plan_id)
+            print(f"⚠️ [INTEGRATED_REMEDY] Some content jobs may not have completed within timeout")
         
         print(f"✅ [INTEGRATED_REMEDY] Integrated remedy job {job_id} completed successfully")
         print(f"✅ [INTEGRATED_REMEDY] Remedy plan ID: {remedy_plan_id}")

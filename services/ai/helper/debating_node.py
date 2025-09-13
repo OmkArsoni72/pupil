@@ -23,6 +23,13 @@ async def node_learn_by_questioning_debating(state, config: RunnableConfig) -> D
     context_bundle = state.req.get("context_bundle") or {}
     topic = state.req.get('topic', 'the topic')
     learning_gaps = state.req.get("learning_gaps") or []
+    
+    # F3: Extract F3 orchestration specifications for gap-specific content
+    f3_orchestration = context_bundle.get("f3_orchestration", {})
+    gap_type = f3_orchestration.get("gap_type", "unknown")
+    content_requirements = f3_orchestration.get("content_requirements", {}).get("questioning_debating", {})
+    mode_coordination = f3_orchestration.get("mode_coordination", "")
+    
     gap_codes = []
     for g in learning_gaps:
         if isinstance(g, str):
@@ -30,14 +37,47 @@ async def node_learn_by_questioning_debating(state, config: RunnableConfig) -> D
         elif isinstance(g, dict) and g.get("code"):
             gap_codes.append(g["code"])
     
+    print(f"💭 [DEBATING] F3: Gap type: {gap_type}, Mode coordination: {mode_coordination}")
+    print(f"💭 [DEBATING] F3: Content requirements: {content_requirements}")
+    
     if state.route == "REMEDY":
         focus = ", ".join(gap_codes) if gap_codes else topic
+        
+        # F3: Build gap-specific debate instructions
+        f3_debate_instruction = ""
+        if gap_type == "conceptual":
+            f3_debate_instruction = "Focus on conceptual understanding and relationships. Use Socratic questions that help students understand connections, underlying principles, and conceptual relationships. Include questions that challenge misconceptions about how concepts relate to each other."
+        elif gap_type == "knowledge":
+            f3_debate_instruction = "Focus on factual knowledge and information recall. Use questions that help students remember key facts, terms, and information."
+        elif gap_type == "application":
+            f3_debate_instruction = "Focus on practical application and problem-solving. Use questions that help students apply knowledge to real-world situations."
+        elif gap_type == "foundational":
+            f3_debate_instruction = "Focus on foundational knowledge and prerequisites. Use questions that help students understand basic concepts and build strong foundations."
+        elif gap_type == "retention":
+            f3_debate_instruction = "Focus on memory and retention. Use questions that help students remember and recall information through spaced repetition techniques."
+        elif gap_type == "engagement":
+            f3_debate_instruction = "Focus on engagement and motivation. Use questions that spark interest and encourage active participation."
+        else:
+            f3_debate_instruction = "Use Socratic questions that help correct misconceptions and deepen understanding."
+        
+        # F3: Add content requirements
+        f3_requirements = []
+        if content_requirements.get("socratic_questions"):
+            f3_requirements.append("Include Socratic questioning techniques")
+        if content_requirements.get("misconception_correction"):
+            f3_requirements.append("Focus on correcting specific misconceptions")
+        
+        f3_requirements_text = f"F3 Requirements: {', '.join(f3_requirements)}" if f3_requirements else ""
+        
         prompt = (
             f"Create a debate setup in JSON with keys: settings, personas, prompts, closing_summary_cue. "
-            f"Focus on fixing the misconception(s): {focus}. "
+            f"Focus on fixing {gap_type} misconception(s): {focus}. "
+            f"Gap Type: {gap_type}. Mode Coordination: {mode_coordination}. "
+            f"{f3_debate_instruction} "
+            f"{f3_requirements_text} "
             f"Use context if helpful (lesson_script excerpt={str(context_bundle.get('lesson_script'))[:120]}). "
             "Settings should include format and simple rules. Personas should include a teacher-like guide and a student. "
-            "Prompts should be Socratic questions that help correct the misconception."
+            "Prompts should be Socratic questions that help correct the misconception and build understanding."
         )
     else:
         prompt = (

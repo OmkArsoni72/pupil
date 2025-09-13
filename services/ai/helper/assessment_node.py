@@ -119,6 +119,15 @@ async def node_learning_by_assessment(state, config: RunnableConfig) -> Dict[str
     preferred_types = assessment_opts.get("types") or ["MCQ", "Short", "TrueFalse"]
     desired_count = int(assessment_opts.get("count", 4))
 
+    # F3: Extract F3 orchestration specifications for gap-specific assessment
+    f3_orchestration = context_bundle.get("f3_orchestration", {})
+    gap_type = f3_orchestration.get("gap_type", "unknown")
+    assessment_focus = f3_orchestration.get("assessment_focus", "general")
+    content_requirements = f3_orchestration.get("content_requirements", {}).get("assessment", {})
+    
+    print(f"📝 [ASSESSMENT] F3: Gap type: {gap_type}, Assessment focus: {assessment_focus}")
+    print(f"📝 [ASSESSMENT] F3: Content requirements: {content_requirements}")
+
     # Pull prior artifacts produced earlier in this job from DB (AHS session or Remedy report)
     ahs_snippets: Dict[str, Any] = {}
     remedy_snippets: Dict[str, Any] = {}
@@ -142,9 +151,55 @@ async def node_learning_by_assessment(state, config: RunnableConfig) -> Dict[str
         elif isinstance(g, dict) and g.get("code"):
             gap_codes.append(g["code"])
 
+    # F3: Build gap-specific assessment prompt
+    f3_assessment_instruction = ""
+    if assessment_focus == "recall":
+        f3_assessment_instruction = "Focus on factual recall and memory. Include questions that test knowledge retention and key term recognition."
+    elif assessment_focus == "analysis":
+        f3_assessment_instruction = "Focus on analysis and understanding relationships. Include questions that test conceptual understanding and connections."
+    elif assessment_focus == "application":
+        f3_assessment_instruction = "Focus on practical application and problem-solving. Include questions that test real-world application skills."
+    elif assessment_focus == "foundation_check":
+        f3_assessment_instruction = "Focus on foundational knowledge validation. Include questions that test prerequisite understanding."
+    elif assessment_focus == "retention_check":
+        f3_assessment_instruction = "Focus on retention and spaced repetition. Include questions that test long-term memory and recall."
+    elif assessment_focus == "engagement_check":
+        f3_assessment_instruction = "Focus on engagement and motivation. Include questions that test interest and participation levels."
+    
+    # F3: Add content requirements to assessment focus
+    f3_requirements = []
+    if content_requirements.get("recall_focus"):
+        f3_requirements.append("Include factual recall questions")
+    if content_requirements.get("factual_questions"):
+        f3_requirements.append("Include factual knowledge questions")
+    if content_requirements.get("analysis_focus"):
+        f3_requirements.append("Include analysis and reasoning questions")
+    if content_requirements.get("relationship_questions"):
+        f3_requirements.append("Include relationship and connection questions")
+    if content_requirements.get("application_focus"):
+        f3_requirements.append("Include practical application questions")
+    if content_requirements.get("problem_solving_questions"):
+        f3_requirements.append("Include problem-solving questions")
+    if content_requirements.get("foundation_check"):
+        f3_requirements.append("Include foundational knowledge validation")
+    if content_requirements.get("prerequisite_validation"):
+        f3_requirements.append("Include prerequisite understanding questions")
+    if content_requirements.get("retention_check"):
+        f3_requirements.append("Include retention and memory questions")
+    if content_requirements.get("spaced_assessment"):
+        f3_requirements.append("Include spaced repetition questions")
+    if content_requirements.get("engagement_check"):
+        f3_requirements.append("Include engagement and motivation questions")
+    if content_requirements.get("motivation_questions"):
+        f3_requirements.append("Include motivation and interest questions")
+    
+    f3_requirements_text = f"F3 Requirements: {', '.join(f3_requirements)}" if f3_requirements else ""
+
     prompt = (
-        f"You are an assessment generator for grade {grade}. Create a short assessment strictly aligned to the provided content and gaps.\n"
-        f"Topic: {topic}. Gaps: {', '.join(gap_codes) if gap_codes else 'none provided'}.\n"
+        f"You are an assessment generator for grade {grade}. Create a short assessment strictly aligned to the provided content and {gap_type} gaps.\n"
+        f"Topic: {topic}. Gap Type: {gap_type}. Gaps: {', '.join(gap_codes) if gap_codes else 'none provided'}.\n"
+        f"Assessment Focus: {assessment_focus}. {f3_assessment_instruction}\n"
+        f"{f3_requirements_text}\n"
         f"Context snippets (may be partial):\n"
         f"- Reading summaries: {json.dumps(ahs_snippets.get('texts') or remedy_snippets.get('micro_notes') or [], ensure_ascii=False)[:800]}\n"
         f"- Practice problems (sample): {json.dumps(ahs_snippets.get('problems') or remedy_snippets.get('micro_problems') or [], ensure_ascii=False)[:800]}\n"
@@ -152,7 +207,7 @@ async def node_learning_by_assessment(state, config: RunnableConfig) -> Dict[str
         f"- In-class questions (sample): {json.dumps((context_bundle.get('in_class_questions') or [])[:3], ensure_ascii=False)[:600]}\n\n"
         f"Return JSON ONLY with keys: questions, coverage_summary.\n"
         f"questions: array of {desired_count} items. Each item must have: type one of {preferred_types}, difficulty one of ['easy','medium','hard'], stem (string), options (array for MCQ/TrueFalse, omit otherwise), answer (string or letter), explanation (string).\n"
-        f"Ensure at least one easy and one medium question; include at least one item targeting the gaps if provided. coverage_summary: array of short strings for key concepts covered."
+        f"Ensure at least one easy and one medium question; include at least one item targeting the {gap_type} gaps if provided. coverage_summary: array of short strings for key concepts covered."
     )
 
     print(f"📝 [ASSESSMENT] Sending prompt to LLM...")

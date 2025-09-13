@@ -29,6 +29,12 @@ async def node_learn_by_reading(state, config: RunnableConfig) -> Dict[str, Any]
     learning_gaps = req.get('learning_gaps') or []
     context_bundle = req.get("context_bundle") or {}
 
+    # F3: Extract F3 orchestration specifications for gap-specific content
+    f3_orchestration = context_bundle.get("f3_orchestration", {})
+    gap_type = f3_orchestration.get("gap_type", "unknown")
+    content_requirements = f3_orchestration.get("content_requirements", {}).get("reading", {})
+    mode_coordination = f3_orchestration.get("mode_coordination", "")
+
     # Build remedy-focused context if needed
     gap_codes = []
     gap_evidence = []
@@ -44,16 +50,41 @@ async def node_learn_by_reading(state, config: RunnableConfig) -> Dict[str, Any]
     print(f"📖 [READING] Processing topic: {topic}")
     print(f"📖 [READING] Grade level: {grade_level}")
     print(f"📖 [READING] Learning gaps: {learning_gaps}")
+    print(f"📖 [READING] F3: Gap type: {gap_type}, Mode coordination: {mode_coordination}")
+    print(f"📖 [READING] F3: Content requirements: {content_requirements}")
 
     if state.route == "REMEDY":
+        # F3: Build gap-specific focus text with F3 orchestration
         focus_text = (
-            f"Remediate student gaps: {', '.join(gap_codes) if gap_codes else 'unspecified'} "
+            f"Remediate {gap_type} gaps: {', '.join(gap_codes) if gap_codes else 'unspecified'} "
             f"with evidence: {', '.join(gap_evidence) if gap_evidence else 'n/a'}."
         )
+        
+        # F3: Add gap-specific content requirements to prompt
+        f3_requirements = []
+        if content_requirements.get("include_glossary"):
+            f3_requirements.append("Include comprehensive glossary with key terms")
+        if content_requirements.get("include_memory_aids"):
+            f3_requirements.append("Include memory aids and mnemonics")
+        if content_requirements.get("highlight_key_terms"):
+            f3_requirements.append("Highlight and emphasize key terms")
+        if content_requirements.get("include_visualizations"):
+            f3_requirements.append("Include visualizations and diagrams")
+        if content_requirements.get("include_analogies"):
+            f3_requirements.append("Include analogies and comparisons")
+        if content_requirements.get("include_refreshers"):
+            f3_requirements.append("Include refresher content for retention")
+        if content_requirements.get("basic_concepts"):
+            f3_requirements.append("Focus on basic foundational concepts")
+        
+        f3_instruction = f"F3 Requirements: {', '.join(f3_requirements)}" if f3_requirements else ""
+        
         prompt = f"""
-        Create concise, structured notes strictly focused on closing the student's learning gaps.
+        Create concise, structured notes strictly focused on closing the student's {gap_type} learning gaps.
         {focus_text}
-        Grade level: {grade_level}. Include 1-2 gap-explanations tightly linked to the gaps.
+        Grade level: {grade_level}. Mode coordination: {mode_coordination}.
+        {f3_instruction}
+        Include 1-2 gap-explanations tightly linked to the gaps.
         Use context where relevant:
         - lesson_script excerpt: {str(context_bundle.get('lesson_script'))[:200]}
         - in_class_questions (sample): {str((context_bundle.get('in_class_questions') or [])[:2])}

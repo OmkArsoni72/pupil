@@ -78,12 +78,24 @@ GAP_TYPE_KEYWORDS = {
     "engagement": ["motivation", "interest", "attention", "participation", "bored", "disengaged"]
 }
 
+# F3: Learning Mode Orchestration - PRD Compliant Mode Sequences
 MODE_STRATEGIES = {
+    # Knowledge Gaps: Reading → Watching → Assessment sequence
     "knowledge": ["learn_by_reading", "learn_by_watching", "learning_by_assessment"],
+    
+    # Conceptual Gaps: Questioning & Debating → Doing → Reading with visualizations
     "conceptual": ["learn_by_questioning_debating", "learn_by_doing", "learn_by_reading", "learning_by_assessment"],
+    
+    # Application Gaps: Solving → Playing → Doing with progressive difficulty
     "application": ["learn_by_solving", "learn_by_playing", "learn_by_doing", "learning_by_assessment"],
-    "foundational": ["learn_by_reading", "learn_by_watching"],  # escalate later
+    
+    # Foundational Gaps: Reading → Watching (escalate to prerequisites later)
+    "foundational": ["learn_by_reading", "learn_by_watching", "learning_by_assessment"],
+    
+    # Retention Gaps: Reading (refreshers) → Solving (spaced repetition) → Playing
     "retention": ["learn_by_reading", "learn_by_solving", "learn_by_playing", "learning_by_assessment"],
+    
+    # Engagement Gaps: Playing → Listening & Speaking → Watching for variety
     "engagement": ["learn_by_playing", "learn_by_listening_speaking", "learn_by_watching", "learning_by_assessment"]
 }
 
@@ -146,9 +158,9 @@ async def gap_classifier_node(state: RemedyState, config: RunnableConfig) -> Dic
 
 async def strategy_planner_node(state: RemedyState, config: RunnableConfig) -> Dict[str, Any]:
     """
-    Generate remediation plans for each classified gap.
+    F3: Generate remediation plans with intelligent mode sequencing for each classified gap.
     """
-    print(f"\n📋 [STRATEGY_PLANNER] Starting strategy planning...")
+    print(f"\n📋 [STRATEGY_PLANNER] Starting F3 mode orchestration planning...")
     
     remediation_plans = []
     
@@ -156,79 +168,143 @@ async def strategy_planner_node(state: RemedyState, config: RunnableConfig) -> D
         gap_type = analysis["gap_type"]
         original_gap = analysis["original_gap"]
         
-        # Get recommended modes for this gap type
-        recommended_modes = MODE_STRATEGIES.get(gap_type, ["learn_by_reading", "learning_by_assessment"])
+        # F3: Get PRD-compliant mode sequence for this gap type
+        base_modes = MODE_STRATEGIES.get(gap_type, ["learn_by_reading", "learning_by_assessment"])
+        
+        # F3: Add assessment checkpoints throughout remediation (PRD requirement)
+        sequenced_modes = _add_assessment_checkpoints(base_modes, gap_type)
         
         # Generate content specifications based on gap type and evidence
         content_specs = await _generate_content_specifications(gap_type, original_gap, state.context_refs)
         
+        # F3: Add mode sequencing metadata for content coordination
+        content_specs["mode_sequence"] = sequenced_modes
+        content_specs["gap_type"] = gap_type
+        content_specs["orchestration_strategy"] = f"{gap_type}_remediation_sequence"
+        
         plan = RemediationPlan(
             gap_type=gap_type,
-            selected_modes=recommended_modes,
+            selected_modes=sequenced_modes,
             content_specifications=content_specs,
-            priority=1,  # Can be enhanced with priority logic
-            estimated_duration_minutes=15
+            priority=1,
+            estimated_duration_minutes=_estimate_duration(sequenced_modes)
         )
         
         remediation_plans.append(plan)
-        print(f"📋 [STRATEGY_PLANNER] Created plan for {gap_type} gap: {recommended_modes}")
+        print(f"📋 [STRATEGY_PLANNER] F3: Created {gap_type} plan with sequence: {sequenced_modes}")
     
-    print(f"✅ [STRATEGY_PLANNER] Generated {len(remediation_plans)} remediation plans")
+    print(f"✅ [STRATEGY_PLANNER] F3: Generated {len(remediation_plans)} orchestrated remediation plans")
     return {"remediation_plans": remediation_plans}
+
+def _add_assessment_checkpoints(base_modes: List[str], gap_type: str) -> List[str]:
+    """
+    F3: Add assessment checkpoints throughout remediation as per PRD.
+    """
+    sequenced_modes = []
+    
+    for i, mode in enumerate(base_modes):
+        sequenced_modes.append(mode)
+        
+        # Add assessment checkpoint after core content modes (not after assessment)
+        if mode != "learning_by_assessment" and i < len(base_modes) - 1:
+            # Add mini-assessment for progress verification
+            sequenced_modes.append("learning_by_assessment")
+    
+    return sequenced_modes
+
+def _estimate_duration(modes: List[str]) -> int:
+    """
+    F3: Estimate duration based on mode sequence complexity.
+    """
+    base_duration = 15  # Base 15 minutes
+    mode_multiplier = len(modes) * 2  # 2 minutes per mode
+    assessment_penalty = modes.count("learning_by_assessment") * 3  # 3 minutes per assessment
+    
+    return base_duration + mode_multiplier + assessment_penalty
 
 async def _generate_content_specifications(gap_type: GapType, gap: GapEvidence, context_refs: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Generate detailed content specifications for Content Agent based on gap type.
+    F3: Generate detailed gap-specific content specifications for Multi-Modal Content Agent.
     """
     base_specs = {
         "gap_code": gap.code,
         "gap_evidence": gap.evidence or [],
         "context_refs": context_refs,
-        "targeted_remediation": True
+        "targeted_remediation": True,
+        "f3_orchestration": True
     }
     
-    # Add gap-type specific specifications
+    # F3: Gap-type specific content specifications per PRD
     if gap_type == "knowledge":
         base_specs.update({
-            "focus": "factual_information",
-            "include_glossary": True,
-            "include_memory_aids": True,
-            "assessment_focus": "recall"
+            "focus": "factual_information_delivery",
+            "content_requirements": {
+                "reading": {"include_glossary": True, "include_memory_aids": True, "highlight_key_terms": True},
+                "watching": {"curated_videos": True, "educational_summaries": True},
+                "assessment": {"recall_focus": True, "factual_questions": True}
+            },
+            "assessment_focus": "recall",
+            "mode_coordination": "sequential_information_build"
         })
     elif gap_type == "conceptual":
         base_specs.update({
             "focus": "understanding_relationships",
-            "include_visualizations": True,
-            "include_analogies": True,
-            "assessment_focus": "analysis"
+            "content_requirements": {
+                "questioning_debating": {"socratic_questions": True, "misconception_correction": True},
+                "doing": {"hands_on_experiments": True, "concept_application": True},
+                "reading": {"include_visualizations": True, "include_analogies": True, "relationship_diagrams": True},
+                "assessment": {"analysis_focus": True, "relationship_questions": True}
+            },
+            "assessment_focus": "analysis",
+            "mode_coordination": "concept_building_sequence"
         })
     elif gap_type == "application":
         base_specs.update({
             "focus": "practical_problem_solving",
-            "progressive_difficulty": True,
-            "include_step_by_step": True,
-            "assessment_focus": "application"
+            "content_requirements": {
+                "solving": {"progressive_difficulty": True, "step_by_step_solutions": True},
+                "playing": {"problem_based_games": True, "skill_practice": True},
+                "doing": {"real_world_applications": True, "practical_exercises": True},
+                "assessment": {"application_focus": True, "problem_solving_questions": True}
+            },
+            "assessment_focus": "application",
+            "mode_coordination": "skill_building_progression"
         })
     elif gap_type == "foundational":
         base_specs.update({
             "focus": "prerequisite_knowledge",
+            "content_requirements": {
+                "reading": {"basic_concepts": True, "foundational_notes": True},
+                "watching": {"basic_explanations": True, "foundational_videos": True},
+                "assessment": {"foundation_check": True, "prerequisite_validation": True}
+            },
             "escalation_required": True,
-            "include_basic_concepts": True,
-            "assessment_focus": "foundation_check"
+            "assessment_focus": "foundation_check",
+            "mode_coordination": "prerequisite_building"
         })
     elif gap_type == "retention":
         base_specs.update({
             "focus": "spaced_repetition",
-            "include_refreshers": True,
-            "include_mnemonics": True,
-            "assessment_focus": "retention_check"
+            "content_requirements": {
+                "reading": {"include_refreshers": True, "spaced_content": True},
+                "solving": {"spaced_repetition": True, "memory_reinforcement": True},
+                "playing": {"retention_games": True, "memory_aids": True},
+                "assessment": {"retention_check": True, "spaced_assessment": True}
+            },
+            "assessment_focus": "retention_check",
+            "mode_coordination": "memory_reinforcement_cycle"
         })
     elif gap_type == "engagement":
         base_specs.update({
             "focus": "motivational_content",
-            "include_gamification": True,
-            "include_storytelling": True,
-            "assessment_focus": "engagement_check"
+            "content_requirements": {
+                "playing": {"gamification": True, "interactive_elements": True},
+                "listening_speaking": {"storytelling": True, "audio_engagement": True},
+                "watching": {"variety_content": True, "visual_engagement": True},
+                "assessment": {"engagement_check": True, "motivation_questions": True}
+            },
+            "assessment_focus": "engagement_check",
+            "mode_coordination": "engagement_building_sequence"
         })
     
     return base_specs

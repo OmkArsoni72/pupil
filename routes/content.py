@@ -497,7 +497,7 @@ async def get_remedy_content(job_id: str):
     if not integrated_job:
         raise HTTPException(404, "Remedy job not found")
     
-    if integrated_job.status != "completed":
+    if integrated_job.status not in ["completed", "partial_completion"]:
         raise HTTPException(202, f"Job not completed yet. Status: {integrated_job.status}")
     
     if not integrated_job.content_job_ids:
@@ -505,18 +505,35 @@ async def get_remedy_content(job_id: str):
     
     # Get content from each content job
     content_results = []
+    successful_jobs = 0
+    
     for content_job_id in integrated_job.content_job_ids:
         try:
+            # Check if content job is completed first
+            content_job = await get_job(content_job_id)
+            if not content_job or content_job.get("status") != "completed":
+                print(f"Content job {content_job_id} not ready yet, status: {content_job.get('status') if content_job else 'not found'}")
+                content_results.append({
+                    "content_job_id": content_job_id,
+                    "status": content_job.get("status") if content_job else "not_found",
+                    "error": "Content job not completed yet"
+                })
+                continue
+            
             # Reuse the existing job_content logic
             content_result = await job_content(content_job_id, None)
             content_results.append({
                 "content_job_id": content_job_id,
+                "status": "completed",
                 "content": content_result.get("content", {})
             })
+            successful_jobs += 1
+            
         except Exception as e:
             print(f"Error getting content for job {content_job_id}: {str(e)}")
             content_results.append({
                 "content_job_id": content_job_id,
+                "status": "error",
                 "error": str(e)
             })
     
@@ -526,8 +543,11 @@ async def get_remedy_content(job_id: str):
     
     return {
         "job_id": job_id,
+        "status": integrated_job.status,
         "remedy_plan_id": integrated_job.remedy_plan_id,
         "remedy_plans": remedy_plan.get("remediation_plans", []) if remedy_plan else [],
-        "content_results": content_results
+        "content_results": content_results,
+        "successful_jobs": successful_jobs,
+        "total_jobs": len(integrated_job.content_job_ids)
     }
 

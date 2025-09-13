@@ -23,18 +23,62 @@ async def node_learn_by_doing(state, config: RunnableConfig) -> Dict[str, Any]:
     topic = state.req.get("topic", "Topic")
     learning_gaps = state.req.get("learning_gaps") or []
     context_bundle = state.req.get("context_bundle") or {}
+    
+    # F3: Extract F3 orchestration specifications for gap-specific content
+    f3_orchestration = context_bundle.get("f3_orchestration", {})
+    gap_type = f3_orchestration.get("gap_type", "unknown")
+    content_requirements = f3_orchestration.get("content_requirements", {}).get("doing", {})
+    mode_coordination = f3_orchestration.get("mode_coordination", "")
+    
     gap_codes = []
     for g in learning_gaps:
         if isinstance(g, str):
             gap_codes.append(g)
         elif isinstance(g, dict) and g.get("code"):
             gap_codes.append(g["code"])
+    
     print(f"🔬 [DOING] Topic: {topic}")
+    print(f"🔬 [DOING] F3: Gap type: {gap_type}, Mode coordination: {mode_coordination}")
+    print(f"🔬 [DOING] F3: Content requirements: {content_requirements}")
 
     if state.route == "REMEDY":
         focus = ", ".join(gap_codes) if gap_codes else topic
+        
+        # F3: Build gap-specific activity instructions
+        f3_activity_instruction = ""
+        if gap_type == "conceptual":
+            f3_activity_instruction = "Focus on conceptual understanding and relationships. Design hands-on experiments that help students understand underlying principles and conceptual relationships through direct experience."
+        elif gap_type == "application":
+            f3_activity_instruction = "Focus on practical application and real-world problem-solving. Design activities that require students to apply knowledge to solve practical, hands-on problems with real-world relevance."
+        elif gap_type == "knowledge":
+            f3_activity_instruction = "Focus on factual knowledge reinforcement. Design activities that help students remember and reinforce key facts and information through hands-on experience."
+        elif gap_type == "foundational":
+            f3_activity_instruction = "Focus on foundational knowledge building. Design activities that help students understand basic concepts and build strong foundations through simple, clear experiments."
+        elif gap_type == "retention":
+            f3_activity_instruction = "Focus on memory and retention. Design activities that reinforce learning through hands-on repetition and memory techniques."
+        elif gap_type == "engagement":
+            f3_activity_instruction = "Focus on engagement and motivation. Design fun, interactive activities that spark interest and encourage active participation through hands-on exploration."
+        else:
+            f3_activity_instruction = "Design hands-on activities that help students learn and understand the topic."
+        
+        # F3: Add content requirements
+        f3_requirements = []
+        if content_requirements.get("hands_on_experiments"):
+            f3_requirements.append("Include hands-on experimental elements")
+        if content_requirements.get("concept_application"):
+            f3_requirements.append("Focus on concept application")
+        if content_requirements.get("real_world_applications"):
+            f3_requirements.append("Include real-world applications")
+        if content_requirements.get("practical_exercises"):
+            f3_requirements.append("Include practical exercises")
+        
+        f3_requirements_text = f"F3 Requirements: {', '.join(f3_requirements)}" if f3_requirements else ""
+        
         prompt = (
-            f"Design a very short, safe home activity to fix the misconception(s): {focus}. "
+            f"Design a very short, safe home activity to fix {gap_type} misconception(s): {focus}. "
+            f"Gap Type: {gap_type}. Mode Coordination: {mode_coordination}. "
+            f"{f3_activity_instruction} "
+            f"{f3_requirements_text} "
             f"Use context if helpful (script excerpt={str(context_bundle.get('lesson_script'))[:120]}). "
             f"Return JSON with keys: materials (list), steps (list), post_task_questions (list), safety_notes (list), evaluation_criteria (list). "
             f"Safety notes must include specific precautions. Evaluation criteria should assess understanding and safety. "
