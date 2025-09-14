@@ -157,3 +157,6 @@ zstandard==0.23.0
 youtube-transcript-api==0.6.2
 isodate==0.6.1
 google-cloud-storage==2.14.0
+# RAG Engine Dependencies
+pinecone-client==3.0.0
+google-generativeai==0.8.5

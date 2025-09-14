@@ -1,6 +1,7 @@
 """
 RAG Integration for Remedy Agent
 Handles prerequisite discovery for foundational gaps.
+Now uses Enhanced RAG Integration with vector search capabilities.
 """
 
 from typing import Dict, Any, List, Optional
@@ -8,6 +9,7 @@ import os
 from pydantic import BaseModel
 from langchain_google_genai import ChatGoogleGenerativeAI
 from services.db_operations.base import prerequisite_cache_collection
+from services.ai.enhanced_rag_integration import enhanced_rag
 import anyio
 
 # LLM for RAG operations
@@ -26,7 +28,8 @@ class PrerequisiteTopic(BaseModel):
 
 async def discover_prerequisites(gap_code: str, grade_level: str, subject: Optional[str] = None) -> List[Dict[str, Any]]:
     """
-    Discover prerequisite topics for a foundational gap using RAG.
+    Discover prerequisite topics for a foundational gap using Enhanced RAG.
+    Now uses vector search with LLM fallback for better accuracy.
     
     Args:
         gap_code: The learning gap code
@@ -36,76 +39,10 @@ async def discover_prerequisites(gap_code: str, grade_level: str, subject: Optio
     Returns:
         List of prerequisite topics with metadata
     """
-    print(f"🔍 [RAG] Discovering prerequisites for gap: {gap_code}")
+    print(f"🔍 [RAG] Discovering prerequisites for gap: {gap_code} using Enhanced RAG")
     
-    # Check cache first
-    try:
-        def _find_cache():
-            return prerequisite_cache_collection.find_one({"gap_code": gap_code, "grade_level": grade_level, "subject": subject})
-        cached = await anyio.to_thread.run_sync(_find_cache)
-        if cached and isinstance(cached.get("prerequisites"), list) and cached.get("prerequisites"):
-            print(f"🔍 [RAG] Using cached prerequisites for {gap_code}")
-            return cached["prerequisites"]
-    except Exception as _e:
-        print(f"⚠️ [RAG] Cache lookup failed: {_e}")
-
-    # Build RAG query
-    query = f"""
-    For a student in grade {grade_level} struggling with: {gap_code}
-    
-    What are the prerequisite topics and concepts they need to master first?
-    Provide a structured list of prerequisite topics in order of priority.
-    
-    For each prerequisite, include:
-    - Topic name
-    - Grade level where it's typically taught
-    - Priority (1=most important, higher numbers=less critical)
-    - Brief description
-    - Key learning objectives
-    
-    Focus on foundational concepts that build up to understanding {gap_code}.
-    """
-    
-    if subject:
-        query += f"\nSubject area: {subject}"
-    
-    try:
-        # Query RAG system (simulated for now)
-        response = await RAG_LLM.ainvoke(query)
-        
-        # Parse response into structured prerequisites
-        prerequisites = _parse_rag_response(response.content, gap_code)
-        
-        print(f"🔍 [RAG] Found {len(prerequisites)} prerequisites")
-        # Persist to cache
-        try:
-            def _upsert():
-                return prerequisite_cache_collection.update_one(
-                    {"gap_code": gap_code, "grade_level": grade_level, "subject": subject},
-                    {"$set": {"gap_code": gap_code, "grade_level": grade_level, "subject": subject, "prerequisites": prerequisites}},
-                    upsert=True,
-                )
-            await anyio.to_thread.run_sync(_upsert)
-        except Exception as ce:
-            print(f"⚠️ [RAG] Failed to cache prerequisites: {ce}")
-        return prerequisites
-        
-    except Exception as e:
-        print(f"❌ [RAG] Error in prerequisite discovery: {str(e)}")
-        # Return fallback prerequisites
-        fall = _get_fallback_prerequisites(gap_code, grade_level)
-        # Try to cache fallback as well to avoid repeated calls
-        try:
-            def _upsert_f():
-                return prerequisite_cache_collection.update_one(
-                    {"gap_code": gap_code, "grade_level": grade_level, "subject": subject},
-                    {"$set": {"gap_code": gap_code, "grade_level": grade_level, "subject": subject, "prerequisites": fall}},
-                    upsert=True,
-                )
-            await anyio.to_thread.run_sync(_upsert_f)
-        except Exception as ce:
-            print(f"⚠️ [RAG] Failed to cache fallback prerequisites: {ce}")
-        return fall
+    # Use enhanced RAG integration
+    return await enhanced_rag.discover_prerequisites(gap_code, grade_level, subject)
 
 def _parse_rag_response(response_text: str, gap_code: str) -> List[Dict[str, Any]]:
     """
@@ -199,31 +136,12 @@ def _get_fallback_prerequisites(gap_code: str, grade_level: str) -> List[Dict[st
 
 async def get_prerequisite_learning_path(prerequisites: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Generate a learning path for prerequisite topics.
+    Generate a learning path for prerequisite topics using Enhanced RAG.
     """
-    print(f"🗺️ [RAG] Generating learning path for {len(prerequisites)} prerequisites")
+    print(f"🗺️ [RAG] Generating learning path for {len(prerequisites)} prerequisites using Enhanced RAG")
     
-    # Sort by priority
-    sorted_prereqs = sorted(prerequisites, key=lambda x: x.get("priority", 999))
-    
-    learning_path = {
-        "total_prerequisites": len(sorted_prereqs),
-        "estimated_duration_hours": len(sorted_prereqs) * 2,  # 2 hours per prerequisite
-        "prerequisite_sequence": sorted_prereqs,
-        "learning_strategy": "sequential_mastery",
-        "assessment_checkpoints": []
-    }
-    
-    # Add assessment checkpoints
-    for i, prereq in enumerate(sorted_prereqs):
-        learning_path["assessment_checkpoints"].append({
-            "prerequisite_index": i,
-            "topic": prereq["topic"],
-            "assessment_type": "mastery_check",
-            "passing_threshold": 0.8
-        })
-    
-    return learning_path
+    # Use enhanced RAG integration
+    return await enhanced_rag.get_prerequisite_learning_path(prerequisites)
 
 # TODO: Integrate with actual RAG system
 # This would typically involve:

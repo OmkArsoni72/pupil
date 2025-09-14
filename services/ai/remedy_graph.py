@@ -351,9 +351,9 @@ async def prerequisite_discovery_node(state: RemedyState, config: RunnableConfig
 
 async def _discover_prerequisites(gap_code: str, grade_level: str = "unknown") -> List[Dict[str, Any]]:
     """
-    Use RAG integration for prerequisite discovery.
+    Use enhanced RAG integration for blazing fast prerequisite discovery.
     """
-    from services.ai.rag_integration import discover_prerequisites
+    from services.ai.enhanced_rag_integration import discover_prerequisites
     
     try:
         prerequisites = await discover_prerequisites(gap_code, grade_level)
