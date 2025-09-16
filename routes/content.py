@@ -186,6 +186,52 @@ async def debug_jobs():
         "integrated_remedy_jobs": {k: {"status": v.status, "progress": v.progress, "error": v.error} for k, v in INTEGRATED_REMEDY_JOBS.items()}
     }
 
+@router.get("/v1/debug/jobs/{job_id}")
+async def debug_job_status(job_id: str):
+    """Debug endpoint to check job status across all sources"""
+    print(f"🔍 [DEBUG] Checking job status for: {job_id}")
+    
+    try:
+        # Check all sources
+        db_job = await get_job(job_id)
+        mem_job = JOBS.get(job_id)
+        integrated_job = INTEGRATED_REMEDY_JOBS.get(job_id)
+        
+        debug_info = {
+            "job_id": job_id,
+            "sources": {
+                "database": {
+                    "found": bool(db_job),
+                    "status": db_job.get("status") if db_job else None,
+                    "route": db_job.get("route") if db_job else None,
+                    "progress": db_job.get("progress") if db_job else None,
+                    "result_doc_id": db_job.get("result_doc_id") if db_job else None,
+                    "payload_keys": list(db_job.get("payload", {}).keys()) if db_job else []
+                },
+                "memory": {
+                    "found": bool(mem_job),
+                    "status": mem_job.status if mem_job else None,
+                    "progress": mem_job.progress if mem_job else None,
+                    "error": mem_job.error if mem_job else None,
+                    "result_doc_id": getattr(mem_job, 'result_doc_id', None) if mem_job else None
+                },
+                "integrated": {
+                    "found": bool(integrated_job),
+                    "status": integrated_job.status if integrated_job else None,
+                    "progress": integrated_job.progress if integrated_job else None,
+                    "error": integrated_job.error if integrated_job else None,
+                    "remedy_plan_id": integrated_job.remedy_plan_id if integrated_job else None,
+                    "content_job_ids": integrated_job.content_job_ids if integrated_job else []
+                }
+            }
+        }
+        
+        return debug_info
+        
+    except Exception as e:
+        print(f"❌ [DEBUG] Error debugging job {job_id}: {e}")
+        return {"error": str(e)}
+
 
 @router.get("/v1/sessions/{session_id}/afterHourSession")
 async def get_after_hour_session(session_id: str):
@@ -212,74 +258,148 @@ async def job_content(job_id: str, response: Response):
     - For REMEDY: returns student_reports.report.remedy_report for the job's student_id
     If job is not yet completed, returns 202 with current status/progress.
     """
-    # Prefer DB job for complete record (payload, timestamps)
-    db_job = await get_job(job_id)
-    mem_job = JOBS.get(job_id)
+    print(f"🔍 [CONTENT_ROUTE] Getting content for job: {job_id}")
+    
+    try:
+        # Check all possible job sources
+        db_job = await get_job(job_id)
+        mem_job = JOBS.get(job_id)
+        integrated_job = INTEGRATED_REMEDY_JOBS.get(job_id)
+        
+        print(f"📊 [CONTENT_ROUTE] Job sources: DB={bool(db_job)}, MEM={bool(mem_job)}, INT={bool(integrated_job)}")
+        
+        if not db_job and not mem_job and not integrated_job:
+            print(f"❌ [CONTENT_ROUTE] Job {job_id} not found in any source")
+            raise HTTPException(404, "job not found")
+        
+        # Determine the authoritative job record (prefer DB, fallback to memory)
+        if db_job:
+            status_val = db_job.get("status")
+            progress_val = db_job.get("progress", 0)
+            route = db_job.get("route")
+            payload = db_job.get("payload", {})
+            result_doc_id = db_job.get("result_doc_id")
+            print(f"📊 [CONTENT_ROUTE] Using DB job: {status_val} ({route})")
+        elif mem_job:
+            status_val = mem_job.status
+            progress_val = mem_job.progress
+            route = getattr(mem_job, 'route', None)
+            payload = getattr(mem_job, 'payload', {})
+            result_doc_id = getattr(mem_job, 'result_doc_id', None)
+            print(f"📊 [CONTENT_ROUTE] Using memory job: {status_val} ({route})")
+        else:  # integrated_job
+            status_val = integrated_job.status
+            progress_val = integrated_job.progress
+            route = "REMEDY"  # Integrated jobs are always REMEDY
+            payload = {}  # Integrated jobs don't store payload in memory
+            result_doc_id = integrated_job.remedy_plan_id
+            print(f"📊 [CONTENT_ROUTE] Using integrated job: {status_val} ({route})")
+        
+        # Check if job is completed
+        if status_val != "completed":
+            print(f"⚠️ [CONTENT_ROUTE] Job {job_id} not completed yet: {status_val}")
+            response.status_code = 202
+            return {
+                "job_id": job_id,
+                "status": status_val,
+                "progress": progress_val,
+                "message": "Job not completed yet"
+            }
+        
+        print(f"✅ [CONTENT_ROUTE] Job {job_id} is completed, processing {route} route")
+        
+        # Route-specific content retrieval
+        if route == "AHS":
+            return await _get_ahs_content(job_id, payload, result_doc_id)
+        elif route == "REMEDY":
+            return await _get_remedy_content(job_id, payload, result_doc_id, integrated_job)
+        else:
+            print(f"⚠️ [CONTENT_ROUTE] Unknown route: {route}")
+            return {
+                "job_id": job_id,
+                "route": route,
+                "content": None,
+                "message": f"Unknown route: {route}"
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ [CONTENT_ROUTE] Error getting content for job {job_id}: {e}")
+        raise HTTPException(500, f"Internal server error: {str(e)}")
 
-    if not db_job and not mem_job:
-        raise HTTPException(404, "job not found")
-
-    # Determine status
-    status_val = (mem_job.status if mem_job else db_job.get("status")) or db_job.get("status")
-    progress_val = (mem_job.progress if mem_job else db_job.get("progress"))
-
-    if status_val != "completed":
-        response.status_code = 202
-        return {
-            "job_id": job_id,
-            "status": status_val,
-            "progress": progress_val,
-        }
-
-    route = db_job.get("route") if db_job else None
-    payload = db_job.get("payload") if db_job else {}
-
-    if route == "AHS":
-        # Get session_id from result_doc_id or payload
-        result_doc_id = (mem_job.result_doc_id if mem_job else db_job.get("result_doc_id"))
-        session_id = None
-        if result_doc_id and isinstance(result_doc_id, str) and result_doc_id.startswith("sessions/"):
-            session_id = result_doc_id.split("/", 1)[1]
-        if not session_id:
-            session_id = (payload or {}).get("session_id")
-        if not session_id:
-            raise HTTPException(500, "completed job missing session_id")
-
-        # Reuse logic from afterHourSession route
+async def _get_ahs_content(job_id: str, payload: dict, result_doc_id: str):
+    """Get AHS (After Hour Session) content."""
+    print(f"📚 [CONTENT_ROUTE] Getting AHS content for job: {job_id}")
+    
+    # Get session_id from result_doc_id or payload
+    session_id = None
+    if result_doc_id and isinstance(result_doc_id, str) and result_doc_id.startswith("sessions/"):
+        session_id = result_doc_id.split("/", 1)[1]
+    if not session_id:
+        session_id = payload.get("session_id")
+    
+    print(f"📊 [CONTENT_ROUTE] Session ID: {session_id}")
+    
+    if not session_id:
+        print("❌ [CONTENT_ROUTE] Missing session_id for AHS route")
+        raise HTTPException(500, "completed job missing session_id")
+    
+    # Get session from database
+    try:
         from services.db_operations.base import sessions_collection
         from bson import ObjectId
         import anyio
-
+        
         def _find():
             if ObjectId.is_valid(session_id):
                 doc = sessions_collection.find_one({"_id": ObjectId(session_id)}, {"afterHourSession": 1})
                 if doc:
                     return doc
             return sessions_collection.find_one({"_id": session_id}, {"afterHourSession": 1})
-
+        
         doc = await anyio.to_thread.run_sync(_find)
         if not doc:
+            print(f"❌ [CONTENT_ROUTE] Session {session_id} not found")
             raise HTTPException(404, "session not found")
+        
+        after_hour_session = doc.get("afterHourSession", {})
+        print(f"✅ [CONTENT_ROUTE] AHS content retrieved: {len(after_hour_session)} keys")
+        
         return {
             "job_id": job_id,
-            "route": route,
-            "content": doc.get("afterHourSession", {}),
+            "route": "AHS",
+            "session_id": session_id,
+            "content": after_hour_session,
         }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ [CONTENT_ROUTE] Error retrieving AHS content: {e}")
+        raise HTTPException(500, f"Error retrieving session content: {str(e)}")
 
-    elif route == "REMEDY":
-        # For now, return all remedy_report entries for the student in this job
-        # Prefer parsing from result_doc_id if present
-        result_doc_id = (mem_job.result_doc_id if mem_job else db_job.get("result_doc_id"))
-        student_id = (payload or {}).get("student_id")
-        if (not student_id) and isinstance(result_doc_id, str) and result_doc_id.startswith("student_reports/"):
-            student_id = result_doc_id.split("/", 1)[1]
-        if not student_id:
-            raise HTTPException(500, "completed job missing student_id")
-
+async def _get_remedy_content(job_id: str, payload: dict, result_doc_id: str, integrated_job):
+    """Get REMEDY content."""
+    print(f"🎯 [CONTENT_ROUTE] Getting REMEDY content for job: {job_id}")
+    
+    # Get student_id from payload or result_doc_id
+    student_id = payload.get("student_id")
+    if (not student_id) and isinstance(result_doc_id, str) and result_doc_id.startswith("student_reports/"):
+        student_id = result_doc_id.split("/", 1)[1]
+    
+    print(f"📊 [CONTENT_ROUTE] Student ID: {student_id}")
+    
+    if not student_id:
+        print("❌ [CONTENT_ROUTE] Missing student_id for REMEDY route")
+        raise HTTPException(500, "completed job missing student_id")
+    
+    # Get student report from database
+    try:
         from services.db_operations.base import student_reports_collection
         import anyio
         from bson import ObjectId
-
+        
         def _find_student_report():
             # Try by studentId (string)
             doc = student_reports_collection.find_one({"studentId": student_id}, {"report.remedy_report": 1})
@@ -296,26 +416,27 @@ async def job_content(job_id: str, response: Response):
                 if doc:
                     return doc
             return None
-
+        
         report_doc = await anyio.to_thread.run_sync(_find_student_report)
         if not report_doc:
+            print(f"❌ [CONTENT_ROUTE] Student report for {student_id} not found")
             raise HTTPException(404, "student report not found")
-
+        
         remedy_items = (((report_doc or {}).get("report") or {}).get("remedy_report") or [])
+        print(f"✅ [CONTENT_ROUTE] REMEDY content retrieved: {len(remedy_items)} items")
+        
         return {
             "job_id": job_id,
-            "route": route,
+            "route": "REMEDY",
             "student_id": student_id,
             "content": remedy_items,
         }
-
-    else:
-        # Unknown route
-        return {
-            "job_id": job_id,
-            "route": route,
-            "content": None,
-        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ [CONTENT_ROUTE] Error retrieving REMEDY content: {e}")
+        raise HTTPException(500, f"Error retrieving student report: {str(e)}")
 
 @router.get("/v1/remedyJobs/{job_id}/plans")
 async def get_remedy_plans(job_id: str):

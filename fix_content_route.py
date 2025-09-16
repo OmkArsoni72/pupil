@@ -21,10 +21,15 @@ async def check_database_jobs():
     logger.info("=" * 40)
     
     try:
-        from services.db_operations.jobs_db import get_all_jobs
+        from services.db_operations.base import jobs_collection
+        import anyio
         
         # Get all jobs from database
-        jobs = await get_all_jobs()
+        def _get_jobs():
+            cursor = jobs_collection.find({}).sort("created_at", -1).limit(10)
+            return list(cursor)
+        
+        jobs = await anyio.to_thread.run_sync(_get_jobs)
         
         if not jobs:
             logger.info("📭 No jobs found in database")

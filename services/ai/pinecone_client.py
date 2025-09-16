@@ -51,6 +51,11 @@ class PineconeRAGClient:
                 "dimension": 768,  # Gemini text-embedding-004 (optimized for speed)
                 "metric": "cosine"
             },
+            "educational_content_ncert": {
+                "name": "educational-content-ncert",
+                "dimension": 768,
+                "metric": "cosine"
+            },
             "learning_gaps": {
                 "name": "learning-gaps", 
                 "dimension": 768,
@@ -125,7 +130,14 @@ class PineconeRAGClient:
                 content=text,
                 task_type="retrieval_document"  # Optimized for retrieval tasks
             )
-            return result['embedding']
+            # google-generativeai returns {'embedding': {'values': [...]}}
+            emb = result.get('embedding') if isinstance(result, dict) else None
+            if isinstance(emb, dict) and 'values' in emb:
+                return emb['values']
+            # Fallback: some older versions return directly a list or 'embedding' as list
+            if isinstance(emb, list):
+                return emb
+            raise ValueError("Invalid embedding response shape from Gemini")
         except Exception as e:
             logger.error(f"Failed to generate embedding with Gemini: {e}")
             raise
@@ -151,12 +163,36 @@ class PineconeRAGClient:
             return False
         
         try:
-            index = self.pinecone.Index(self.indexes[index_name]["name"])
+            cfg = self.indexes[index_name]
+            # Ensure index exists (auto-create if missing)
+            existing_indexes = self.pinecone.list_indexes()
+            if not any(idx.name == cfg["name"] for idx in existing_indexes):
+                self.pinecone.create_index(
+                    name=cfg["name"],
+                    dimension=cfg["dimension"],
+                    metric=cfg["metric"],
+                    spec=ServerlessSpec(cloud="aws", region="us-east-1"),
+                )
+                logger.info(f"Created missing index: {cfg['name']}")
+            index = self.pinecone.Index(cfg["name"])
             
             # Process vectors in batches
             batch_size = 100
             for i in range(0, len(vectors), batch_size):
-                batch = vectors[i:i + batch_size]
+                raw = vectors[i:i + batch_size]
+                # Ensure shape: id, values (list[float]), metadata
+                batch = []
+                for item in raw:
+                    if "values" in item:
+                        batch.append(item)
+                    elif "vector" in item:
+                        batch.append({
+                            "id": item.get("id"),
+                            "values": item.get("vector"),
+                            "metadata": item.get("metadata", {}),
+                        })
+                    else:
+                        batch.append(item)
                 index.upsert(vectors=batch)
                 logger.info(f"Upserted batch {i//batch_size + 1} to {index_name}")
             
@@ -193,7 +229,18 @@ class PineconeRAGClient:
             return []
         
         try:
-            index = self.pinecone.Index(self.indexes[index_name]["name"])
+            cfg = self.indexes[index_name]
+            # Ensure index exists (auto-create if missing)
+            existing_indexes = self.pinecone.list_indexes()
+            if not any(idx.name == cfg["name"] for idx in existing_indexes):
+                self.pinecone.create_index(
+                    name=cfg["name"],
+                    dimension=cfg["dimension"],
+                    metric=cfg["metric"],
+                    spec=ServerlessSpec(cloud="aws", region="us-east-1"),
+                )
+                logger.info(f"Created missing index: {cfg['name']}")
+            index = self.pinecone.Index(cfg["name"])
             
             query_response = index.query(
                 vector=query_vector,
