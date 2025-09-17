@@ -35,6 +35,13 @@ sessions_collection = db["sessions"]
 student_reports_collection = db["student_reports"]
 class_reports_collection = db["class_reports"]
 jobs_collection = db["jobs"]
+remedy_plans_collection = db["remedy_plans"]
+
+# New collections for Remedy PRD
+prerequisite_cache_collection = db["prerequisite_cache"]
+remediation_logs_collection = db["remediation_logs"]
+validation_logs_collection = db["validation_logs"]
+session_progress_collection = db["session_progress"]
 
 # Optional legacy aliases
 flashcard_users_collection = db["users"]  # from flashcard_game

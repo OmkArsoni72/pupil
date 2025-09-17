@@ -9,7 +9,7 @@ from services.db_operations.content_db import (
     create_remedy_entry,
     resolve_teacher_class_context,
 )
-from services.db_operations.base import sessions_collection
+from services.db_operations.base import sessions_collection, validation_logs_collection
 from bson import ObjectId
 
 # ---------------- Utility: persist & create artifact refs ----------------
@@ -142,3 +142,20 @@ async def persist_artifact(route: str, kind: str, payload: Dict[str, Any], req: 
     # default synthetic id
     print(f"🔧 [UTILS] Using default synthetic ID")
     return f"{route}_{kind}_{uuid4().hex[:8]}"
+
+
+async def log_validation_result(mode: str, is_valid: bool, errors: Dict[str, Any] | None, metadata: Dict[str, Any] | None = None):
+    """Store schema validation results for content agent payloads."""
+    try:
+        def _insert():
+            return validation_logs_collection.insert_one({
+                "mode": mode,
+                "is_valid": is_valid,
+                "errors": errors or {},
+                "metadata": metadata or {},
+                "timestamp": datetime.utcnow().isoformat(),
+            })
+        import anyio
+        await anyio.to_thread.run_sync(_insert)
+    except Exception as e:
+        print(f"⚠️ [UTILS] Failed to log validation result: {e}")
