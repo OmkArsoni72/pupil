@@ -12,7 +12,6 @@ from services.db_operations.base import (
     student_reports_collection,
 )
 from bson import ObjectId
-import anyio
 
 # LLM (provider/model can be swapped)
 LLM = ChatGoogleGenerativeAI(
@@ -23,35 +22,35 @@ LLM = ChatGoogleGenerativeAI(
 
 
 async def _safe_get_session(session_id: str) -> Optional[Dict[str, Any]]:
-    def _find():
+    try:
+        # Motor collections are already async, use them directly
         if ObjectId.is_valid(session_id):
-            doc = sessions_collection.find_one({"_id": ObjectId(session_id)}, {"afterHourSession": 1, "sessionTitle": 1})
+            doc = await sessions_collection.find_one({"_id": ObjectId(session_id)}, {"afterHourSession": 1, "sessionTitle": 1})
             if doc:
                 return doc
-        return sessions_collection.find_one({"_id": session_id}, {"afterHourSession": 1, "sessionTitle": 1})
-    try:
-        return await anyio.to_thread.run_sync(_find)
-    except Exception:
+        return await sessions_collection.find_one({"_id": session_id}, {"afterHourSession": 1, "sessionTitle": 1})
+    except Exception as e:
+        print(f"[DEBUG] _safe_get_session error: {e}")
         return None
 
 
 async def _safe_get_student_report(student_id: str) -> Optional[Dict[str, Any]]:
-    def _find():
+    try:
+        # Motor collections are already async, use them directly
         # try common shapes
-        doc = student_reports_collection.find_one({"studentId": student_id}, {"report.remedy_report": 1})
+        doc = await student_reports_collection.find_one({"studentId": student_id}, {"report.remedy_report": 1})
         if doc:
             return doc
         if ObjectId.is_valid(student_id):
-            doc = student_reports_collection.find_one({"studentId": ObjectId(student_id)}, {"report.remedy_report": 1})
+            doc = await student_reports_collection.find_one({"studentId": ObjectId(student_id)}, {"report.remedy_report": 1})
             if doc:
                 return doc
-            doc = student_reports_collection.find_one({"_id": ObjectId(student_id)}, {"report.remedy_report": 1})
+            doc = await student_reports_collection.find_one({"_id": ObjectId(student_id)}, {"report.remedy_report": 1})
             if doc:
                 return doc
         return None
-    try:
-        return await anyio.to_thread.run_sync(_find)
-    except Exception:
+    except Exception as e:
+        print(f"[DEBUG] _safe_get_student_report error: {e}")
         return None
 
 

@@ -2,7 +2,6 @@ from typing import Dict, Any
 from langchain_core.runnables import RunnableConfig
 from services.db_operations.content_db import set_ahs_status
 from services.db_operations.base import session_progress_collection
-import anyio
 
 async def collector_node(state, config: RunnableConfig) -> Dict[str, Any]:
     """
@@ -26,16 +25,15 @@ async def collector_node(state, config: RunnableConfig) -> Dict[str, Any]:
         db_handles = {"session_doc": f"sessions/{session_id}"}
         # Log session completion metrics
         try:
-            def _insert():
-                return session_progress_collection.insert_one({
-                    "route": "AHS",
-                    "session_id": session_id,
-                    "student_id": state.req.get("student_id"),
-                    "status": "completed",
-                    "modes": state.selected_modes if hasattr(state, 'selected_modes') else state.req.get('modes', []),
-                    "timestamp": __import__("datetime").datetime.utcnow().isoformat()
-                })
-            await anyio.to_thread.run_sync(_insert)
+            # Motor collections are already async, use them directly
+            await session_progress_collection.insert_one({
+                "route": "AHS",
+                "session_id": session_id,
+                "student_id": state.req.get("student_id"),
+                "status": "completed",
+                "modes": state.selected_modes if hasattr(state, 'selected_modes') else state.req.get('modes', []),
+                "timestamp": __import__("datetime").datetime.utcnow().isoformat()
+            })
         except Exception as e:
             print(f"⚠️ [COLLECTOR] Failed to store session progress: {e}")
         print(f"📦 [COLLECTOR] AHS DB handles: {db_handles}")
@@ -47,16 +45,15 @@ async def collector_node(state, config: RunnableConfig) -> Dict[str, Any]:
         db_handles = {"remedy_doc": f"student_reports/{student_id}"}
         # Log session completion metrics
         try:
-            def _insert_remedy():
-                return session_progress_collection.insert_one({
-                    "route": "REMEDY",
-                    "student_id": student_id,
-                    "teacher_class_id": state.req.get("teacher_class_id"),
-                    "status": "completed",
-                    "modes": state.selected_modes if hasattr(state, 'selected_modes') else state.req.get('modes', []),
-                    "timestamp": __import__("datetime").datetime.utcnow().isoformat()
-                })
-            await anyio.to_thread.run_sync(_insert_remedy)
+            # Motor collections are already async, use them directly
+            await session_progress_collection.insert_one({
+                "route": "REMEDY",
+                "student_id": student_id,
+                "teacher_class_id": state.req.get("teacher_class_id"),
+                "status": "completed",
+                "modes": state.selected_modes if hasattr(state, 'selected_modes') else state.req.get('modes', []),
+                "timestamp": __import__("datetime").datetime.utcnow().isoformat()
+            })
         except Exception as e:
             print(f"⚠️ [COLLECTOR] Failed to store remedy session progress: {e}")
         print(f"📦 [COLLECTOR] REMEDY DB handles: {db_handles}")

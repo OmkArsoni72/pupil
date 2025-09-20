@@ -4,7 +4,6 @@ from typing import Any, Dict, Optional
 from uuid import uuid4
 
 from fastapi import HTTPException
-import anyio
 from pymongo.errors import PyMongoError
 
 from services.db_operations.base import (
@@ -21,26 +20,28 @@ async def append_ahs_item(session_id: str, key: str, item: Dict[str, Any]) -> st
         content_id = f"{key}_{uuid4().hex[:8]}"
         update_key = f"afterHourSession.{key}"
         # Try update with ObjectId, then with string id
-        def _update_with_filters():
-            matched = 0
-            if ObjectId.is_valid(session_id):
-                res = sessions_collection.update_one(
-                    {"_id": ObjectId(session_id)},
+        matched_count = 0
+        if ObjectId.is_valid(session_id):
+            res = await sessions_collection.update_one(
+                {"_id": ObjectId(session_id)},
+                {"$push": {update_key: {"id": content_id, **item}}},
+                upsert=False,
+            )
+            matched_count += res.matched_count
+            if matched_count == 0:
+                res2 = await sessions_collection.update_one(
+                    {"_id": session_id},
                     {"$push": {update_key: {"id": content_id, **item}}},
                     upsert=False,
                 )
-                matched += res.matched_count
-                if matched:
-                    return matched
-            res2 = sessions_collection.update_one(
+                matched_count += res2.matched_count
+        else:
+            res = await sessions_collection.update_one(
                 {"_id": session_id},
                 {"$push": {update_key: {"id": content_id, **item}}},
                 upsert=False,
             )
-            matched += res2.matched_count
-            return matched
-
-        matched_count = await anyio.to_thread.run_sync(_update_with_filters)
+            matched_count = res.matched_count
         if matched_count == 0:
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
         return content_id
@@ -53,26 +54,28 @@ async def set_ahs_object(session_id: str, key: str, value: Dict[str, Any]) -> st
         content_id = f"{key}_{uuid4().hex[:8]}"
         update_key = f"afterHourSession.{key}"
         # Try update with ObjectId, then with string id
-        def _update_with_filters():
-            matched = 0
-            if ObjectId.is_valid(session_id):
-                res = sessions_collection.update_one(
-                    {"_id": ObjectId(session_id)},
+        matched_count = 0
+        if ObjectId.is_valid(session_id):
+            res = await sessions_collection.update_one(
+                {"_id": ObjectId(session_id)},
+                {"$set": {update_key: {"id": content_id, **value}}},
+                upsert=False,
+            )
+            matched_count += res.matched_count
+            if matched_count == 0:
+                res2 = await sessions_collection.update_one(
+                    {"_id": session_id},
                     {"$set": {update_key: {"id": content_id, **value}}},
                     upsert=False,
                 )
-                matched += res.matched_count
-                if matched:
-                    return matched
-            res2 = sessions_collection.update_one(
+                matched_count += res2.matched_count
+        else:
+            res = await sessions_collection.update_one(
                 {"_id": session_id},
                 {"$set": {update_key: {"id": content_id, **value}}},
                 upsert=False,
             )
-            matched += res2.matched_count
-            return matched
-
-        matched_count = await anyio.to_thread.run_sync(_update_with_filters)
+            matched_count = res.matched_count
         if matched_count == 0:
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
         return content_id
@@ -83,26 +86,28 @@ async def set_ahs_object(session_id: str, key: str, value: Dict[str, Any]) -> st
 async def set_ahs_status(session_id: str, status: str) -> None:
     try:
         # Try update with ObjectId, then with string id
-        def _update_with_filters():
-            matched = 0
-            if ObjectId.is_valid(session_id):
-                res = sessions_collection.update_one(
-                    {"_id": ObjectId(session_id)},
+        matched_count = 0
+        if ObjectId.is_valid(session_id):
+            res = await sessions_collection.update_one(
+                {"_id": ObjectId(session_id)},
+                {"$set": {"afterHourSession.status": status}},
+                upsert=False,
+            )
+            matched_count += res.matched_count
+            if matched_count == 0:
+                res2 = await sessions_collection.update_one(
+                    {"_id": session_id},
                     {"$set": {"afterHourSession.status": status}},
                     upsert=False,
                 )
-                matched += res.matched_count
-                if matched:
-                    return matched
-            res2 = sessions_collection.update_one(
+                matched_count += res2.matched_count
+        else:
+            res = await sessions_collection.update_one(
                 {"_id": session_id},
                 {"$set": {"afterHourSession.status": status}},
                 upsert=False,
             )
-            matched += res2.matched_count
-            return matched
-
-        matched_count = await anyio.to_thread.run_sync(_update_with_filters)
+            matched_count = res.matched_count
         if matched_count == 0:
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
     except PyMongoError as e:
@@ -135,10 +140,8 @@ async def create_remedy_entry(
             },
         }
 
-        await anyio.to_thread.run_sync(
-            lambda: student_reports_collection.update_one(
-                filter_q, update_doc, upsert=True
-            )
+        await student_reports_collection.update_one(
+            filter_q, update_doc, upsert=True
         )
         return remedy_id
     except PyMongoError as e:
@@ -148,9 +151,7 @@ async def create_remedy_entry(
 async def resolve_teacher_class_context(teacher_class_id: str) -> Optional[Dict[str, Any]]:
     try:
         filter_id = ObjectId(teacher_class_id) if ObjectId.is_valid(teacher_class_id) else teacher_class_id
-        doc = await anyio.to_thread.run_sync(
-            lambda: teacher_class_data_collection.find_one({"_id": filter_id})
-        )
+        doc = await teacher_class_data_collection.find_one({"_id": filter_id})
         if not doc:
             return None
         school = doc.get("school", {})

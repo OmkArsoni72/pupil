@@ -30,21 +30,20 @@ async def persist_artifact(route: str, kind: str, payload: Dict[str, Any], req: 
         
         # Debug: Check if session exists
         try:
-            import anyio
-            def _check_session():
-                if ObjectId.is_valid(session_id):
-                    doc = sessions_collection.find_one({"_id": ObjectId(session_id)})
-                    if doc:
-                        print(f"🔧 [UTILS] Session found with ObjectId: {session_id}")
-                        return True
-                doc = sessions_collection.find_one({"_id": session_id})
+            # Motor collections are already async, use them directly
+            session_exists = False
+            if ObjectId.is_valid(session_id):
+                doc = await sessions_collection.find_one({"_id": ObjectId(session_id)})
+                if doc:
+                    print(f"🔧 [UTILS] Session found with ObjectId: {session_id}")
+                    session_exists = True
+            if not session_exists:
+                doc = await sessions_collection.find_one({"_id": session_id})
                 if doc:
                     print(f"🔧 [UTILS] Session found with string ID: {session_id}")
-                    return True
-                print(f"🔧 [UTILS] Session NOT found: {session_id}")
-                return False
-            
-            session_exists = await anyio.to_thread.run_sync(_check_session)
+                    session_exists = True
+                else:
+                    print(f"🔧 [UTILS] Session NOT found: {session_id}")
             if not session_exists:
                 print(f"🔧 [UTILS] WARNING: Session {session_id} does not exist in database!")
                 print(f"🔧 [UTILS] This might be a test session or the session needs to be created first")
@@ -147,15 +146,13 @@ async def persist_artifact(route: str, kind: str, payload: Dict[str, Any], req: 
 async def log_validation_result(mode: str, is_valid: bool, errors: Dict[str, Any] | None, metadata: Dict[str, Any] | None = None):
     """Store schema validation results for content agent payloads."""
     try:
-        def _insert():
-            return validation_logs_collection.insert_one({
-                "mode": mode,
-                "is_valid": is_valid,
-                "errors": errors or {},
-                "metadata": metadata or {},
-                "timestamp": datetime.utcnow().isoformat(),
-            })
-        import anyio
-        await anyio.to_thread.run_sync(_insert)
+        # Motor collections are already async, use them directly
+        await validation_logs_collection.insert_one({
+            "mode": mode,
+            "is_valid": is_valid,
+            "errors": errors or {},
+            "metadata": metadata or {},
+            "timestamp": datetime.utcnow().isoformat(),
+        })
     except Exception as e:
         print(f"⚠️ [UTILS] Failed to log validation result: {e}")

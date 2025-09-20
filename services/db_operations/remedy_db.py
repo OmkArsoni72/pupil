@@ -1,7 +1,6 @@
 from typing import Dict, Any, List, Optional
 from fastapi import HTTPException
 from services.db_operations.base import remedy_plans_collection
-import anyio
 from datetime import datetime
 
 async def create_remedy_plan(
@@ -36,15 +35,12 @@ async def create_remedy_plan(
             }
         }
         
-        def _insert():
-            return remedy_plans_collection.insert_one(remedy_doc)
-        
-        result = await anyio.to_thread.run_sync(_insert)
-        print(f"✅ [REMEDY_DB] Created remedy plan: {remedy_id}")
+        result = await remedy_plans_collection.insert_one(remedy_doc)
+        print(f"[REMEDY_DB] Created remedy plan: {remedy_id}")
         return str(result.inserted_id)
         
     except Exception as e:
-        print(f"❌ [REMEDY_DB] Error creating remedy plan: {str(e)}")
+        print(f"[REMEDY_DB] Error creating remedy plan: {str(e)}")
         raise HTTPException(status_code=500, detail=f"DB error (create_remedy_plan): {str(e)}")
 
 async def update_remedy_plan_status(
@@ -68,22 +64,19 @@ async def update_remedy_plan_status(
         if completion_status is not None:
             update_data["completion_status"] = completion_status
         
-        def _update():
-            return remedy_plans_collection.update_one(
-                {"_id": remedy_id},
-                {"$set": update_data}
-            )
-        
-        result = await anyio.to_thread.run_sync(_update)
+        result = await remedy_plans_collection.update_one(
+            {"_id": remedy_id},
+            {"$set": update_data}
+        )
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Remedy plan not found")
         
-        print(f"✅ [REMEDY_DB] Updated remedy plan {remedy_id} status to {status}")
+        print(f"[REMEDY_DB] Updated remedy plan {remedy_id} status to {status}")
         
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ [REMEDY_DB] Error updating remedy plan status: {str(e)}")
+        print(f"[REMEDY_DB] Error updating remedy plan status: {str(e)}")
         raise HTTPException(status_code=500, detail=f"DB error (update_remedy_plan_status): {str(e)}")
 
 async def get_remedy_plan(remedy_id: str) -> Optional[Dict[str, Any]]:
@@ -91,34 +84,29 @@ async def get_remedy_plan(remedy_id: str) -> Optional[Dict[str, Any]]:
     Get a remedy plan by ID.
     """
     try:
-        def _find():
-            return remedy_plans_collection.find_one({"_id": remedy_id})
-        
-        result = await anyio.to_thread.run_sync(_find)
+        result = await remedy_plans_collection.find_one({"_id": remedy_id})
         if result:
             result["_id"] = str(result["_id"])  # Convert ObjectId to string
         return result
         
     except Exception as e:
-        print(f"❌ [REMEDY_DB] Error getting remedy plan: {str(e)}")
+        print(f"[REMEDY_DB] Error getting remedy plan: {str(e)}")
         raise HTTPException(status_code=500, detail=f"DB error (get_remedy_plan): {str(e)}")
 
 async def get_latest_remedy_plan_for(student_id: str, teacher_class_id: str) -> Optional[Dict[str, Any]]:
     """Find the most recent remedy plan for a given student and teacher_class_id."""
     try:
-        def _find():
-            cursor = remedy_plans_collection.find({
-                "student_id": student_id,
-                "teacher_class_id": teacher_class_id
-            }).sort("created_at", -1).limit(1)
-            docs = list(cursor)
-            return docs[0] if docs else None
-        result = await anyio.to_thread.run_sync(_find)
+        cursor = remedy_plans_collection.find({
+            "student_id": student_id,
+            "teacher_class_id": teacher_class_id
+        }).sort("created_at", -1).limit(1)
+        docs = await cursor.to_list(length=1)
+        result = docs[0] if docs else None
         if result:
             result["_id"] = str(result["_id"])
         return result
     except Exception as e:
-        print(f"❌ [REMEDY_DB] Error getting latest remedy plan: {str(e)}")
+        print(f"[REMEDY_DB] Error getting latest remedy plan: {str(e)}")
         raise HTTPException(status_code=500, detail=f"DB error (get_latest_remedy_plan_for): {str(e)}")
 
 async def get_remedy_plans_by_student(student_id: str, limit: int = 10) -> List[Dict[str, Any]]:
@@ -126,23 +114,20 @@ async def get_remedy_plans_by_student(student_id: str, limit: int = 10) -> List[
     Get remedy plans for a specific student.
     """
     try:
-        def _find():
-            cursor = remedy_plans_collection.find(
-                {"student_id": student_id}
-            ).sort("created_at", -1).limit(limit)
-            return list(cursor)
-        
-        results = await anyio.to_thread.run_sync(_find)
+        cursor = remedy_plans_collection.find(
+            {"student_id": student_id}
+        ).sort("created_at", -1).limit(limit)
+        results = await cursor.to_list(length=limit)
         
         # Convert ObjectIds to strings
         for result in results:
             result["_id"] = str(result["_id"])
         
-        print(f"✅ [REMEDY_DB] Found {len(results)} remedy plans for student {student_id}")
+        print(f"[REMEDY_DB] Found {len(results)} remedy plans for student {student_id}")
         return results
         
     except Exception as e:
-        print(f"❌ [REMEDY_DB] Error getting remedy plans by student: {str(e)}")
+        print(f"[REMEDY_DB] Error getting remedy plans by student: {str(e)}")
         raise HTTPException(status_code=500, detail=f"DB error (get_remedy_plans_by_student): {str(e)}")
 
 async def update_remedy_plan_completion(
@@ -155,50 +140,47 @@ async def update_remedy_plan_completion(
     Update the completion status of a specific remediation plan within a remedy plan.
     """
     try:
-        def _update():
-            # Get current completion status
-            doc = remedy_plans_collection.find_one({"_id": remedy_id})
-            if not doc:
-                return None
-            
-            completion_status = doc.get("completion_status", {
-                "total_plans": 0,
-                "completed_plans": 0,
-                "failed_plans": 0
-            })
-            
-            # Update counts
-            if status == "completed":
-                completion_status["completed_plans"] += 1
-            elif status == "failed":
-                completion_status["failed_plans"] += 1
-            
-            # Update the specific plan with result
-            update_data = {
-                f"remediation_plans.{plan_index}.completion_status": status,
-                f"remediation_plans.{plan_index}.completed_at": datetime.utcnow(),
-                "completion_status": completion_status,
-                "updated_at": datetime.utcnow()
-            }
-            
-            if content_result:
-                update_data[f"remediation_plans.{plan_index}.content_result"] = content_result
-            
-            return remedy_plans_collection.update_one(
-                {"_id": remedy_id},
-                {"$set": update_data}
-            )
+        # Get current completion status
+        doc = await remedy_plans_collection.find_one({"_id": remedy_id})
+        if not doc:
+            raise HTTPException(status_code=404, detail="Remedy plan not found")
         
-        result = await anyio.to_thread.run_sync(_update)
+        completion_status = doc.get("completion_status", {
+            "total_plans": 0,
+            "completed_plans": 0,
+            "failed_plans": 0
+        })
+        
+        # Update counts
+        if status == "completed":
+            completion_status["completed_plans"] += 1
+        elif status == "failed":
+            completion_status["failed_plans"] += 1
+        
+        # Update the specific plan with result
+        update_data = {
+            f"remediation_plans.{plan_index}.completion_status": status,
+            f"remediation_plans.{plan_index}.completed_at": datetime.utcnow(),
+            "completion_status": completion_status,
+            "updated_at": datetime.utcnow()
+        }
+        
+        if content_result:
+            update_data[f"remediation_plans.{plan_index}.content_result"] = content_result
+        
+        result = await remedy_plans_collection.update_one(
+            {"_id": remedy_id},
+            {"$set": update_data}
+        )
         if result and result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Remedy plan not found")
         
-        print(f"✅ [REMEDY_DB] Updated remedy plan {remedy_id} plan {plan_index} to {status}")
+        print(f"[REMEDY_DB] Updated remedy plan {remedy_id} plan {plan_index} to {status}")
         
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ [REMEDY_DB] Error updating remedy plan completion: {str(e)}")
+        print(f"[REMEDY_DB] Error updating remedy plan completion: {str(e)}")
         raise HTTPException(status_code=500, detail=f"DB error (update_remedy_plan_completion): {str(e)}")
 
 async def get_remedy_plan_summary(remedy_id: str) -> Dict[str, Any]:
@@ -238,5 +220,5 @@ async def get_remedy_plan_summary(remedy_id: str) -> Dict[str, Any]:
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ [REMEDY_DB] Error getting remedy plan summary: {str(e)}")
+        print(f"[REMEDY_DB] Error getting remedy plan summary: {str(e)}")
         raise HTTPException(status_code=500, detail=f"DB error (get_remedy_plan_summary): {str(e)}")

@@ -9,9 +9,8 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from bson import ObjectId
 
-from routes import details, user, timetable, afterhours, content, assessment
-from routes import ncert_rag
-from routes.websocket import sio  # socketio server
+from api.routes import content, afterhours, details, teacher, user, timetable, assessment, rag
+from api.routes.websocket import sio  # socketio server
 from services.ping_schedular import self_ping
 from services.ai.performance_dashboard import router as performance_router
 import socketio
@@ -52,13 +51,14 @@ app.add_middleware(
 
 # Routers
 app.include_router(details.router, prefix="/api")
+app.include_router(teacher.router, prefix="/api")
 app.include_router(user.router, prefix="/api")
 app.include_router(timetable.router, prefix="/api")
 app.include_router(afterhours.router, prefix="/api")
 app.include_router(content.router, prefix="/api")
 app.include_router(assessment.router, prefix="/api")
 app.include_router(performance_router, prefix="/api")
-app.include_router(ncert_rag.router, prefix="/api")
+app.include_router(rag.router, prefix="/api")
 
 # Mount Socket.IO
 app.mount("/ws", socketio.ASGIApp(sio))

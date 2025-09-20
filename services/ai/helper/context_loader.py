@@ -26,7 +26,9 @@ async def load_lesson_script(script_id: Optional[str]) -> Optional[Dict[str, Any
         return lessons_collection.find_one({"_id": _safe_object_id(script_id)})
 
     try:
-        doc = await anyio.to_thread.run_sync(_find)
+        import asyncio
+        loop = asyncio.get_event_loop()
+        doc = await loop.run_in_executor(None, _find)
         if not doc:
             return None
         # Return only lightweight excerpt fields if present
@@ -51,7 +53,9 @@ async def load_in_class_questions(question_ids: Optional[List[str]]) -> List[Dic
         return list(cur)
 
     try:
-        docs = await anyio.to_thread.run_sync(_find_many)
+        import asyncio
+        loop = asyncio.get_event_loop()
+        docs = await loop.run_in_executor(None, _find_many)
         result: List[Dict[str, Any]] = []
         for d in docs:
             result.append({
@@ -73,12 +77,9 @@ async def load_recent_sessions(session_ids: Optional[List[str]]) -> List[Dict[st
 
     ids = [_safe_object_id(sid) for sid in session_ids]
 
-    def _find_many():
-        cur = sessions_collection.find({"_id": {"$in": ids}}, {"afterHourSession": 1, "sessionTitle": 1})
-        return list(cur)
-
     try:
-        docs = await anyio.to_thread.run_sync(_find_many)
+        # Motor collections are already async, use them directly
+        docs = await sessions_collection.find({"_id": {"$in": ids}}, {"afterHourSession": 1, "sessionTitle": 1}).to_list(length=None)
         result: List[Dict[str, Any]] = []
         for d in docs:
             result.append({
