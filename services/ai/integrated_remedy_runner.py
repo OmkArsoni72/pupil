@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from langchain_core.runnables import RunnableConfig
 from uuid import uuid4
 
-from services.ai.remedy_graph import (
+from graphs.remedy_graph import (
     build_remedy_graph,
     REMEDY_CHECKPOINTER,
     RemedyState,
