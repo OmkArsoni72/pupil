@@ -3,6 +3,7 @@ from api.schemas.assessment_schemas import AssessmentGenerateRequest, Assessment
 from api.controllers.assessment_controller import AssessmentController
 
 router = APIRouter()
+controller = AssessmentController()
 
 @router.post("/assessments/generate", status_code=202)
 async def generate_assessment(
@@ -19,7 +20,7 @@ async def generate_assessment(
     
     Returns immediately with job_id for status tracking.
     """
-    return await AssessmentController.generate_assessment(request, background_tasks)
+    return await controller.generate_assessment(request, background_tasks)
 
 @router.get("/assessments/status/{job_id}", response_model=AssessmentStatusResponse)
 async def get_assessment_status(job_id: str):

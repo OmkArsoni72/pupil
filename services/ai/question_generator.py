@@ -166,12 +166,24 @@ Generate the complete assessment JSON now:
                     try:
                         return json.loads(candidate)
                     except Exception:
-                        # 5) Attempt light repair: remove trailing commas
-                        repaired = re.sub(r",\s*([}\]])", r"\1", candidate)
+                        # 5) Attempt comprehensive JSON repair
+                        repaired = QuestionGenerator._repair_json_syntax(candidate)
                         try:
                             return json.loads(repaired)
                         except Exception:
-                            pass
+                            # 6) Try to fix more complex JSON issues
+                            try:
+                                # Remove any text before the first {
+                                start_brace = repaired.find('{')
+                                if start_brace != -1:
+                                    repaired = repaired[start_brace:]
+                                # Remove any text after the last }
+                                end_brace = repaired.rfind('}')
+                                if end_brace != -1:
+                                    repaired = repaired[:end_brace + 1]
+                                return json.loads(repaired)
+                            except Exception:
+                                pass
                 
                 # 6) Give up: return structured error
                 logger.warning(f"Raw output (unparsed): {output_text[:500]}...")
@@ -208,3 +220,40 @@ Generate the complete assessment JSON now:
                     if depth == 0 and start is not None:
                         return text[start:i+1]
         return None
+    
+    @staticmethod
+    def _repair_json_syntax(json_str: str) -> str:
+        """Attempt to repair common JSON syntax errors."""
+        # Remove any markdown code fences
+        json_str = re.sub(r'```json\s*', '', json_str)
+        json_str = re.sub(r'```\s*', '', json_str)
+        
+        # Fix missing quotes around keys
+        json_str = re.sub(r'(\w+):', r'"\1":', json_str)
+        
+        # Fix missing quotes around string values (but not around numbers, booleans, null)
+        json_str = re.sub(r':\s*([^",{\[\s][^,}\]\]]*?)(\s*[,}\]])', r': "\1"\2', json_str)
+        
+        # Remove trailing commas
+        json_str = re.sub(r',\s*([}\]])', r'\1', json_str)
+        
+        # Fix common string escaping issues
+        json_str = json_str.replace('\\"', '"')
+        json_str = json_str.replace('\\n', '\n')
+        json_str = json_str.replace('\\t', '\t')
+        
+        # Fix specific issue: missing quotes in option text
+        # Look for patterns like: "text": "Some text with missing quote
+        json_str = re.sub(r'"text":\s*"([^"]*?)(?=\s*[,}\]])', r'"text": "\1"', json_str)
+        
+        # Fix unclosed strings in options - more comprehensive approach
+        json_str = re.sub(r'"text":\s*"([^"]*?)(?=\s*[,}\]])', r'"text": "\1"', json_str)
+        
+        # Fix missing quotes in option text that might be unclosed
+        # This handles cases where the LLM generates malformed JSON with unclosed strings
+        json_str = re.sub(r'"text":\s*"([^"]*?)(?=\s*[,}\]])', r'"text": "\1"', json_str)
+        
+        # Fix any remaining unclosed strings by adding quotes at the end
+        json_str = re.sub(r'"text":\s*"([^"]*?)(?=\s*[,}\]])', r'"text": "\1"', json_str)
+        
+        return json_str

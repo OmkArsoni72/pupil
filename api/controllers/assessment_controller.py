@@ -2,7 +2,7 @@ from fastapi import BackgroundTasks, HTTPException
 from typing import Dict, Any
 import uuid
 from api.schemas.assessment_schemas import AssessmentGenerateRequest, AssessmentStatusResponse
-from services.ai.assessment_generator import generate_assessment as gen_assessment_task
+from workers.assessment_worker import AssessmentWorker
 from services.db_operations.assessment_db import (
     get_assessment_by_job_id, 
     get_assessment_by_id, 
@@ -16,8 +16,11 @@ class AssessmentController:
     Preserves all LangGraph workflows and assessment generation business logic.
     """
     
-    @staticmethod
+    def __init__(self):
+        self.worker = AssessmentWorker()
+    
     async def generate_assessment(
+        self,
         request: AssessmentGenerateRequest,
         background_tasks: BackgroundTasks
     ) -> Dict[str, Any]:
@@ -42,7 +45,7 @@ class AssessmentController:
         # Add both the status update and the main task to background tasks
         # This ensures the POST returns instantly
         background_tasks.add_task(update_job_status, job_id, "pending")
-        background_tasks.add_task(gen_assessment_task, request.dict(), job_id)
+        background_tasks.add_task(self.worker.process_assessment_job, {**request.dict(), "job_id": job_id})
         
         return {"job_id": job_id, "status": "pending"}
     
