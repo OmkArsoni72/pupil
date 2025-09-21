@@ -16,7 +16,7 @@ from services.ai.remedy_graph import (
     RemedyState,
     RemediationPlan
 )
-from services.ai.content_graph import build_graph as build_content_graph
+from graphs.content_graph import build_content_graph
 from services.ai.job_runner import run_job as run_content_job
 from services.db_operations.jobs_db import create_job, update_job, get_job
 from services.db_operations.remedy_db import create_remedy_plan, update_remedy_plan_status

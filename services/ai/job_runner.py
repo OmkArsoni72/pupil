@@ -4,13 +4,14 @@ from typing import Dict, Any, Literal, Optional
 from pydantic import BaseModel
 from langchain_core.runnables import RunnableConfig
 
-from services.ai.content_graph import (
+from graphs.content_graph import (
 	CHECKPOINTER,
-	build_graph,
-	State,
+	build_content_graph as build_graph,
+	ContentState as State,
 )
 from services.db_operations.jobs_db import create_job, update_job
 from services.ai.helper.collector_node import collector_node
+from workers.content_worker import ContentWorker
 
 
 class JobStatus(BaseModel):
@@ -36,38 +37,23 @@ async def run_job(job_id: str, route: Literal["AHS", "REMEDY"], req: Dict[str, A
 		print(f"🚀 [JOB_RUNNER] Initialized job {job_id} in JOBS dict")
 	
 	try:
-		JOBS[job_id].status = "in_progress"
-		print(f"🚀 [JOB_RUNNER] Updating job {job_id} to in_progress in DB...")
-		await update_job(job_id, status="in_progress")
-		print(f"🚀 [JOB_RUNNER] Job {job_id} updated to in_progress successfully")
+		# Use Content Worker for processing
+		content_worker = ContentWorker()
+		params = {
+			"job_id": job_id,
+			"route": route,
+			"req": req,
+			"modes": req.get("modes", [])
+		}
 		
-		cfg = RunnableConfig(configurable={"thread_id": job_id})
-		print(f"🚀 [JOB_RUNNER] Building graph for job {job_id} with modes: {req.get('modes', [])}")
-		
-		graph = build_graph(req["modes"]).compile(checkpointer=CHECKPOINTER)
-		init_state = State(route=route, req=req)
-		print(f"🚀 [JOB_RUNNER] Invoking graph for job {job_id}...")
-		
-		final_state = await graph.ainvoke(init_state, cfg)
-		print(f"🚀 [JOB_RUNNER] Graph completed for job {job_id}")
+		print(f"🚀 [JOB_RUNNER] Delegating job {job_id} to Content Worker...")
+		result = await content_worker.process_content_job(params)
+		print(f"🚀 [JOB_RUNNER] Content Worker completed job {job_id}")
 
-		# choose final doc handle (support dict or Pydantic model)
-		try:
-			if isinstance(final_state, dict):
-				handles = final_state.get("db_handles", {}) or {}
-			else:
-				handles = getattr(final_state, "db_handles", {}) or {}
-		except Exception:
-			handles = {}
-
-		result_doc_id = handles.get("session_doc") or handles.get("remedy_doc")
-		print(f"🚀 [JOB_RUNNER] Job {job_id} result_doc_id: {result_doc_id}")
-
+		# Update job status based on result
 		JOBS[job_id].status = "completed"
 		JOBS[job_id].progress = 100
-		JOBS[job_id].result_doc_id = result_doc_id
-		print(f"🚀 [JOB_RUNNER] Updating job {job_id} to completed in DB...")
-		await update_job(job_id, status="completed", progress=100, result_doc_id=result_doc_id)
+		JOBS[job_id].result_doc_id = result.get("db_handles", {}).get("session_id") or result.get("db_handles", {}).get("remedy_id")
 		print(f"🚀 [JOB_RUNNER] Job {job_id} completed successfully")
 		
 	except Exception as e:
