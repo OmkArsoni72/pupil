@@ -5,7 +5,7 @@ Handles the complete remediation workflow including gap classification, plan gen
 
 from typing import Dict, Any
 from .base_agent import BaseAgent
-from graphs.remedy_graph import build_remedy_graph
+from core.graphs.remedy_graph import build_remedy_graph
 
 
 class RemedyAgent(BaseAgent):

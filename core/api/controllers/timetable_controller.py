@@ -5,15 +5,15 @@ from datetime import date
 import logging
 from bson import ObjectId
 
-from services.timetable_service import (
+from core.services.timetable_service import (
     ingest_timetable_from_db,
     pair_lessons_for_teacher,
     store_timetable_pdf,
     get_daily_schedule_for_teacher_class,
     complete_session_and_event
 )
-from services.db_operations.timetable_db import get_teachers_from_institution
-from models.timetable import PDFTimetable, TeacherInfo
+from core.services.db_operations.timetable_db import get_teachers_from_institution
+from core.models.timetable import PDFTimetable, TeacherInfo
 
 logger = logging.getLogger(__name__)
 

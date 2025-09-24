@@ -10,19 +10,19 @@ from langchain_core.runnables import RunnableConfig
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 # Import nodes from separate files
-from services.ai.helper.orchestrator_node import orchestrator_node
-from services.ai.helper.reading_node import node_learn_by_reading
-from services.ai.helper.writing_node import node_learn_by_writing
-from services.ai.helper.watching_node import node_learn_by_watching
-from services.ai.helper.playing_node import node_learn_by_playing
-from services.ai.helper.doing_node import node_learn_by_doing
-from services.ai.helper.solving_node import node_learn_by_solving
-from services.ai.helper.debating_node import node_learn_by_questioning_debating
-from services.ai.helper.listening_speaking_node import node_learn_by_listening_speaking
-from services.ai.helper.assessment_node import node_learning_by_assessment
-from services.ai.helper.collector_node import collector_node
+from core.services.ai.helper.orchestrator_node import orchestrator_node
+from core.services.ai.helper.reading_node import node_learn_by_reading
+from core.services.ai.helper.writing_node import node_learn_by_writing
+from core.services.ai.helper.watching_node import node_learn_by_watching
+from core.services.ai.helper.playing_node import node_learn_by_playing
+from core.services.ai.helper.doing_node import node_learn_by_doing
+from core.services.ai.helper.solving_node import node_learn_by_solving
+from core.services.ai.helper.debating_node import node_learn_by_questioning_debating
+from core.services.ai.helper.listening_speaking_node import node_learn_by_listening_speaking
+from core.services.ai.helper.assessment_node import node_learning_by_assessment
+from core.services.ai.helper.collector_node import collector_node
 
-from services.ai.schemas import (
+from core.services.ai.schemas import (
     LearnByReadingPayload,
     LearnByWritingPayload,
     LearnByDoingPayload,

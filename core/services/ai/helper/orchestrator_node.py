@@ -1,7 +1,7 @@
 import os
 from typing import Dict, Any, List, Literal
 from langchain_core.runnables import RunnableConfig
-from services.ai.helper.context_loader import build_context_bundle
+from core.services.ai.helper.context_loader import build_context_bundle
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 # LLM (provider/model can be swapped)

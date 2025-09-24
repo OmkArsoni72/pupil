@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, Header
 from typing import List
-from api.controllers.user_controller import UserController
-from services.db_operations.user_db import (
+from core.api.controllers.user_controller import UserController
+from core.services.db_operations.user_db import (
     UserBase, UserUpdate, UserResponse, LoginUser, RoleUpdate, CodeBind
 )
 

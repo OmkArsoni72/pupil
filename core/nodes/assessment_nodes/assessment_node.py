@@ -4,7 +4,7 @@ Extracted from services/ai/assessment_generator.py
 """
 
 from typing import Dict, Any
-from services.db_operations.assessment_db import save_assessment, update_job_status
+from core.services.db_operations.assessment_db import save_assessment, update_job_status
 
 
 async def assessment_node(state: Dict[str, Any]) -> Dict[str, Any]:

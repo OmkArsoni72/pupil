@@ -4,8 +4,8 @@ Handles async processing of content generation jobs for both AHS and Remedy rout
 """
 
 from typing import Dict, Any
-from agents.content_agent import ContentAgent
-from services.db_operations.jobs_db import update_job
+from core.agents.content_agent import ContentAgent
+from core.services.db_operations.jobs_db import update_job
 
 
 class ContentWorker:

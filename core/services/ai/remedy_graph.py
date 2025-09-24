@@ -7,8 +7,8 @@ from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 
 # Import Content Agent for integration
-from services.ai.content_graph import build_graph as build_content_graph, CHECKPOINTER as CONTENT_CHECKPOINTER
-from services.db_operations.base import remediation_logs_collection
+from core.services.ai.content_graph import build_graph as build_content_graph, CHECKPOINTER as CONTENT_CHECKPOINTER
+from core.services.db_operations.base import remediation_logs_collection
 import anyio
 
 # LLM for Remedy Agent
@@ -353,7 +353,7 @@ async def _discover_prerequisites(gap_code: str, grade_level: str = "unknown") -
     """
     Use enhanced RAG integration for blazing fast prerequisite discovery.
     """
-    from services.ai.enhanced_rag_integration import discover_prerequisites
+    from core.services.ai.enhanced_rag_integration import discover_prerequisites
     
     try:
         prerequisites = await discover_prerequisites(gap_code, grade_level)

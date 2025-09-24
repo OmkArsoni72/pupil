@@ -1,7 +1,7 @@
 from fastapi import APIRouter
-from api.controllers.details_controller import DetailsController
-from models.student_report import StudentReport
-from models.class_report import ClassReport
+from core.api.controllers.details_controller import DetailsController
+from core.models.student_report import StudentReport
+from core.models.class_report import ClassReport
 
 router = APIRouter()
 

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from api.controllers.websocket_controller import WebSocketController
+from core.api.controllers.websocket_controller import WebSocketController
 
 router = APIRouter()
 sio = WebSocketController.sio

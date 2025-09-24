@@ -1,9 +1,9 @@
 from bson import ObjectId
 from fastapi import HTTPException
-from services.calendar import create_event, delete_event
+from core.services.calendar import create_event, delete_event
 from typing import List
-from models.teacher import Teacher, Lecture, Chapter
-from services.db_operations.base import db, get_all_chapters_from_teacher_class_data, update_chapters_in_teacher_class_data
+from core.models.teacher import Teacher, Lecture, Chapter
+from core.services.db_operations.base import db, get_all_chapters_from_teacher_class_data, update_chapters_in_teacher_class_data
 
 
 class TeacherController:

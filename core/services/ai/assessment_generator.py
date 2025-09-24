@@ -1,11 +1,11 @@
 # services/ai/generate_assessment_graph.py
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
-from services.ai.schema_agent import SchemaAgent
-from services.ai.context_agent import ContextAgent
-from services.ai.question_generator import QuestionGenerator
-from services.db_operations.assessment_db import save_assessment, update_job_status, mark_job_failed
-from services.ai.llm_client import llm_factory
+from core.services.ai.schema_agent import SchemaAgent
+from core.services.ai.context_agent import ContextAgent
+from core.services.ai.question_generator import QuestionGenerator
+from core.services.db_operations.assessment_db import save_assessment, update_job_status, mark_job_failed
+from core.services.ai.llm_client import llm_factory
 import uuid
 import logging
 

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, BackgroundTasks
-from api.schemas.assessment_schemas import AssessmentGenerateRequest, AssessmentStatusResponse
-from api.controllers.assessment_controller import AssessmentController
+from core.api.schemas.assessment_schemas import AssessmentGenerateRequest, AssessmentStatusResponse
+from core.api.controllers.assessment_controller import AssessmentController
 
 router = APIRouter()
 controller = AssessmentController()

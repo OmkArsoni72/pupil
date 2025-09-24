@@ -3,8 +3,8 @@ import json
 from typing import Dict, Any
 from langchain_core.runnables import RunnableConfig
 from langchain_google_genai import ChatGoogleGenerativeAI
-from services.ai.schemas import LearnByWritingPayload
-from services.ai.helper.utils import persist_artifact, log_validation_result
+from core.services.ai.schemas import LearnByWritingPayload
+from core.services.ai.helper.utils import persist_artifact, log_validation_result
 
 # LLM (provider/model can be swapped)
 LLM = ChatGoogleGenerativeAI(

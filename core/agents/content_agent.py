@@ -5,7 +5,7 @@ Handles the complete content generation workflow for both AHS and Remedy routes.
 
 from typing import Dict, Any
 from .base_agent import BaseAgent
-from graphs.content_graph import build_content_graph
+from core.graphs.content_graph import build_content_graph
 
 
 class ContentAgent(BaseAgent):

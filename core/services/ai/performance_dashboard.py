@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import HTMLResponse
 
-from services.ai.performance_monitoring import (
+from core.services.ai.performance_monitoring import (
     performance_monitor,
     get_system_performance_summary,
     run_ab_test

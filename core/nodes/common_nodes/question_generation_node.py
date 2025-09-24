@@ -4,9 +4,9 @@ Extracted from services/ai/assessment_generator.py
 """
 
 from typing import Dict, Any
-from services.ai.question_generator import QuestionGenerator
-from services.ai.llm_client import llm_factory
-from services.db_operations.assessment_db import mark_job_failed
+from core.services.ai.question_generator import QuestionGenerator
+from core.services.ai.llm_client import llm_factory
+from core.services.db_operations.assessment_db import mark_job_failed
 import uuid
 
 

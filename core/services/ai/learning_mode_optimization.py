@@ -9,9 +9,9 @@ from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime, timedelta
 import anyio
 
-from services.ai.pinecone_client import query_vectors, generate_embedding
-from services.ai.vector_schemas import create_combined_filter
-from services.ai.similar_gap_analysis import similar_gap_analyzer
+from core.services.ai.pinecone_client import query_vectors, generate_embedding
+from core.services.ai.vector_schemas import create_combined_filter
+from core.services.ai.similar_gap_analysis import similar_gap_analyzer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

@@ -4,9 +4,9 @@ Preserves all endpoints and functionality from routes/content.py
 """
 
 from fastapi import APIRouter, Response
-from services.ai.job_runner import JobStatus
-from api.schemas.content_schemas import AHSRequest, RemedyRequest
-from api.controllers.content_controller import ContentController
+from core.services.ai.job_runner import JobStatus
+from core.api.schemas.content_schemas import AHSRequest, RemedyRequest
+from core.api.controllers.content_controller import ContentController
 
 router = APIRouter()
 

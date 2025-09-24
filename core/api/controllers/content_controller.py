@@ -9,13 +9,13 @@ from uuid import uuid4
 import asyncio
 
 # ---- LangGraph / LangChain imports - PRESERVED ----
-from services.ai.job_runner import JOBS, JobStatus, run_job
-from services.ai.integrated_remedy_runner import INTEGRATED_REMEDY_JOBS, IntegratedRemedyJobStatus, run_integrated_remedy_job
-from services.db_operations.jobs_db import update_job, create_job, get_job
-from services.db_operations.remedy_db import get_remedy_plan, get_latest_remedy_plan_for
+from core.services.ai.job_runner import JOBS, JobStatus, run_job
+from core.services.ai.integrated_remedy_runner import INTEGRATED_REMEDY_JOBS, IntegratedRemedyJobStatus, run_integrated_remedy_job
+from core.services.db_operations.jobs_db import update_job, create_job, get_job
+from core.services.db_operations.remedy_db import get_remedy_plan, get_latest_remedy_plan_for
 
 # Schema imports
-from api.schemas.content_schemas import AHSRequest, RemedyRequest
+from core.api.schemas.content_schemas import AHSRequest, RemedyRequest
 
 
 class ContentController:
@@ -212,7 +212,7 @@ class ContentController:
     @staticmethod
     async def get_after_hour_session(session_id: str) -> Dict[str, Any]:
         """Get after hour session data. Preserves exact logic."""
-        from services.db_operations.base import sessions_collection
+        from core.services.db_operations.base import sessions_collection
         from bson import ObjectId
 
         # Motor collections are already async, use them directly
@@ -326,7 +326,7 @@ class ContentController:
         
         # Get session from database
         try:
-            from services.db_operations.base import sessions_collection
+            from core.services.db_operations.base import sessions_collection
             from bson import ObjectId
 
             # Motor collections are already async, use them directly
@@ -374,7 +374,7 @@ class ContentController:
         
         # Get student report from database
         try:
-            from services.db_operations.base import student_reports_collection
+            from core.services.db_operations.base import student_reports_collection
             from bson import ObjectId
 
             # Motor collections are already async, use them directly
@@ -544,7 +544,7 @@ class ContentController:
         # Collect validation summaries for F4
         validation_summaries = []
         try:
-            from services.db_operations.base import validation_logs_collection
+            from core.services.db_operations.base import validation_logs_collection
 
             # Motor collections are already async, use them directly
             cursor = validation_logs_collection.find({}).sort("timestamp", -1).limit(20)

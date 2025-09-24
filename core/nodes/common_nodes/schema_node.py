@@ -4,7 +4,7 @@ Extracted from services/ai/assessment_generator.py
 """
 
 from typing import Dict, Any
-from services.ai.schema_agent import SchemaAgent
+from core.services.ai.schema_agent import SchemaAgent
 
 
 async def schema_node(state: Dict[str, Any]) -> Dict[str, Any]:

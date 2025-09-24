@@ -1,9 +1,9 @@
 from fastapi import BackgroundTasks, HTTPException
 from typing import Dict, Any
 import uuid
-from api.schemas.assessment_schemas import AssessmentGenerateRequest, AssessmentStatusResponse
-from workers.assessment_worker import AssessmentWorker
-from services.db_operations.assessment_db import (
+from core.api.schemas.assessment_schemas import AssessmentGenerateRequest, AssessmentStatusResponse
+from core.workers.assessment_worker import AssessmentWorker
+from core.services.db_operations.assessment_db import (
     get_assessment_by_job_id, 
     get_assessment_by_id, 
     get_questions_by_ids,

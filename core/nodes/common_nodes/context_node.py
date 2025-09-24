@@ -4,7 +4,7 @@ Extracted from services/ai/assessment_generator.py
 """
 
 from typing import Dict, Any
-from services.ai.context_agent import ContextAgent
+from core.services.ai.context_agent import ContextAgent
 
 
 async def context_node(state: Dict[str, Any]) -> Dict[str, Any]:

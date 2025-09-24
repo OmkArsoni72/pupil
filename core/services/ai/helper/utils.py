@@ -3,13 +3,13 @@ from typing import Dict, Any
 from uuid import uuid4
 from datetime import datetime
 
-from services.db_operations.content_db import (
+from core.services.db_operations.content_db import (
     append_ahs_item,
     set_ahs_object,
     create_remedy_entry,
     resolve_teacher_class_context,
 )
-from services.db_operations.base import sessions_collection, validation_logs_collection
+from core.services.db_operations.base import sessions_collection, validation_logs_collection
 from bson import ObjectId
 
 # ---------------- Utility: persist & create artifact refs ----------------

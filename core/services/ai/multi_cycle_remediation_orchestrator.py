@@ -8,12 +8,12 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 import uuid
 
-from services.ai.floor_wise_prerequisite_discovery import discover_floor_wise_prerequisites
-from services.ai.enhanced_rag_integration import enhanced_rag
-from services.db_operations.remedy_db import (
+from core.services.ai.floor_wise_prerequisite_discovery import discover_floor_wise_prerequisites
+from core.services.ai.enhanced_rag_integration import enhanced_rag
+from core.services.db_operations.remedy_db import (
     create_remedy_plan, update_remedy_plan_completion, get_remedy_plan
 )
-from services.db_operations.base import remediation_logs_collection
+from core.services.db_operations.base import remediation_logs_collection
 import anyio
 
 # Configure logging

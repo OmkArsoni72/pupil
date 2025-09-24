@@ -8,9 +8,9 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 import anyio
 
-from services.ai.pinecone_client import query_vectors, generate_embedding, is_pinecone_available
-from services.ai.vector_schemas import create_combined_filter
-from services.db_operations.base import prerequisite_cache_collection
+from core.services.ai.pinecone_client import query_vectors, generate_embedding, is_pinecone_available
+from core.services.ai.vector_schemas import create_combined_filter
+from core.services.db_operations.base import prerequisite_cache_collection
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

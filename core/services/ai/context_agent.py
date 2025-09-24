@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from services.db_operations.assessment_db import (
+from core.services.db_operations.assessment_db import (
     get_pyq_examples,
     get_topics_by_date_range,
     get_random_past_topics,

@@ -5,7 +5,7 @@ Handles the complete assessment generation workflow.
 
 from typing import Dict, Any
 from .base_agent import BaseAgent
-from graphs.assessment_graph import build_assessment_graph
+from core.graphs.assessment_graph import build_assessment_graph
 
 
 class AssessmentAgent(BaseAgent):

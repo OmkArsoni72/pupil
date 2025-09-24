@@ -4,8 +4,8 @@ Handles async processing of remediation jobs.
 """
 
 from typing import Dict, Any
-from agents.remedy_agent import RemedyAgent
-from services.db_operations.jobs_db import update_job
+from core.agents.remedy_agent import RemedyAgent
+from core.services.db_operations.jobs_db import update_job
 
 
 class RemedyWorker:

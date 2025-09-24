@@ -1,7 +1,7 @@
 from typing import Dict, Any
 from langchain_core.runnables import RunnableConfig
-from services.db_operations.content_db import set_ahs_status
-from services.db_operations.base import session_progress_collection
+from core.services.db_operations.content_db import set_ahs_status
+from core.services.db_operations.base import session_progress_collection
 
 async def collector_node(state, config: RunnableConfig) -> Dict[str, Any]:
     """

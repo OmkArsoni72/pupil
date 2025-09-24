@@ -3,7 +3,7 @@ import json
 from typing import Dict, Any
 from langchain_core.runnables import RunnableConfig
 from langchain_google_genai import ChatGoogleGenerativeAI
-from services.ai.helper.utils import persist_artifact, log_validation_result
+from core.services.ai.helper.utils import persist_artifact, log_validation_result
 
 # LLM (provider/model can be swapped)
 LLM = ChatGoogleGenerativeAI(
@@ -153,7 +153,7 @@ async def node_learn_by_questioning_debating(state, config: RunnableConfig) -> D
     await persist_artifact(state.route, "DEBATING", payload, state.req)
     # Mandatory validation for debating payload
     try:
-        from services.ai.schemas import LearnByDebatingPayload
+        from core.services.ai.schemas import LearnByDebatingPayload
         # Ensure required keys exist with defaults
         validated_payload = {
             "settings": payload.get("settings", {}),

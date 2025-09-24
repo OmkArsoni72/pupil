@@ -4,8 +4,8 @@ Handles async processing of assessment generation jobs.
 """
 
 from typing import Dict, Any
-from agents.assessment_agent import AssessmentAgent
-from services.db_operations.assessment_db import update_job_status, mark_job_failed
+from core.agents.assessment_agent import AssessmentAgent
+from core.services.db_operations.assessment_db import update_job_status, mark_job_failed
 
 
 class AssessmentWorker:

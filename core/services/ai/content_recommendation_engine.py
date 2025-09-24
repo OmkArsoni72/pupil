@@ -9,8 +9,8 @@ from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
 import anyio
 
-from services.ai.pinecone_client import query_vectors, generate_embedding
-from services.ai.vector_schemas import (
+from core.services.ai.pinecone_client import query_vectors, generate_embedding
+from core.services.ai.vector_schemas import (
     create_combined_filter, create_grade_level_filter, create_subject_filter,
     create_difficulty_filter, create_success_rate_filter
 )

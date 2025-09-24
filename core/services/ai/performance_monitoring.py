@@ -10,10 +10,10 @@ from datetime import datetime, timedelta
 import time
 import json
 
-from services.ai.pinecone_client import get_index_stats, is_pinecone_available
-from services.ai.enhanced_rag_integration import enhanced_rag
-from services.ai.content_recommendation_engine import recommendation_engine
-from services.ai.similar_gap_analysis import similar_gap_analyzer
+from core.services.ai.pinecone_client import get_index_stats, is_pinecone_available
+from core.services.ai.enhanced_rag_integration import enhanced_rag
+from core.services.ai.content_recommendation_engine import recommendation_engine
+from core.services.ai.similar_gap_analysis import similar_gap_analyzer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

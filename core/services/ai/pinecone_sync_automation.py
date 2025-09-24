@@ -10,14 +10,14 @@ from datetime import datetime, timedelta
 import anyio
 from bson import ObjectId
 
-from services.ai.pinecone_client import (
+from core.services.ai.pinecone_client import (
     get_pinecone_client, generate_embedding, upsert_vectors, is_pinecone_available
 )
-from services.ai.vector_schemas import (
+from core.services.ai.vector_schemas import (
     extract_educational_content_metadata, extract_question_metadata, extract_remediation_metadata,
     EducationalContentMetadata, QuestionMetadata, LearningGapMetadata
 )
-from services.db_operations.base import (
+from core.services.db_operations.base import (
     sessions_collection, lesson_script_collection, question_bank_collection,
     student_reports_collection, pinecone_sync_log_collection
 )

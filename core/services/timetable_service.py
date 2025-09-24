@@ -12,8 +12,8 @@ from fastapi import HTTPException
 
 from pydantic import ValidationError
 
-from models.timetable import PDFTimetable, TimetableEvent, TeacherInfo, Lesson
-from services.db_operations.timetable_db import (
+from core.models.timetable import PDFTimetable, TimetableEvent, TeacherInfo, Lesson
+from core.services.db_operations.timetable_db import (
     create_timetable_events_in_db, 
     get_pdf_timetable_from_db, 
     get_unpaired_events_for_teacher,

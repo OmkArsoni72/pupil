@@ -8,8 +8,8 @@ import logging
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
 from langchain_google_genai import ChatGoogleGenerativeAI
-from services.db_operations.base import prerequisite_cache_collection
-from services.ai.pinecone_client import (
+from core.services.db_operations.base import prerequisite_cache_collection
+from core.services.ai.pinecone_client import (
     pinecone_client, 
     generate_embedding, 
     query_vectors,

@@ -2,8 +2,8 @@ from bson import ObjectId
 from pymongo.errors import PyMongoError
 from fastapi import HTTPException
 from typing import List, Optional
-from services.db_operations.user_db import UserBase, UserUpdate, UserResponse
-from services.db_operations.base import user_collection
+from core.services.db_operations.user_db import UserBase, UserUpdate, UserResponse
+from core.services.db_operations.base import user_collection
 
 
 def find_user_by_email(email: str) -> Optional[dict]:

@@ -1,11 +1,11 @@
 from fastapi import HTTPException
 from typing import List, Dict, Any
 
-from services.ai.ncert_ingest import ingest_ncert_pdfs, get_ingest_status
-from services.ai.pinecone_client import generate_embedding, query_vectors, is_pinecone_available
-from services.ai.floor_wise_prerequisite_discovery import discover_floor_wise_prerequisites
+from core.services.ai.ncert_ingest import ingest_ncert_pdfs, get_ingest_status
+from core.services.ai.pinecone_client import generate_embedding, query_vectors, is_pinecone_available
+from core.services.ai.floor_wise_prerequisite_discovery import discover_floor_wise_prerequisites
 
-from api.schemas.rag_schemas import IngestRequest, QARequest, PrereqRequest
+from core.api.schemas.rag_schemas import IngestRequest, QARequest, PrereqRequest
 
 
 class RagController:

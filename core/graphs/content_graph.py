@@ -12,19 +12,19 @@ from langchain_core.runnables import RunnableConfig
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 # Import nodes from new structure
-from nodes.content_nodes.orchestrator_node import orchestrator_node
-from nodes.content_nodes.collector_node import collector_node
-from nodes.learning_mode_nodes.reading_node import node_learn_by_reading
-from nodes.learning_mode_nodes.writing_node import node_learn_by_writing
-from nodes.learning_mode_nodes.watching_node import node_learn_by_watching
-from nodes.learning_mode_nodes.playing_node import node_learn_by_playing
-from nodes.learning_mode_nodes.doing_node import node_learn_by_doing
-from nodes.learning_mode_nodes.solving_node import node_learn_by_solving
-from nodes.learning_mode_nodes.debating_node import node_learn_by_questioning_debating
-from nodes.learning_mode_nodes.listening_speaking_node import node_learn_by_listening_speaking
-from nodes.learning_mode_nodes.assessment_node import node_learning_by_assessment
+from core.nodes.content_nodes.orchestrator_node import orchestrator_node
+from core.nodes.content_nodes.collector_node import collector_node
+from core.nodes.learning_mode_nodes.reading_node import node_learn_by_reading
+from core.nodes.learning_mode_nodes.writing_node import node_learn_by_writing
+from core.nodes.learning_mode_nodes.watching_node import node_learn_by_watching
+from core.nodes.learning_mode_nodes.playing_node import node_learn_by_playing
+from core.nodes.learning_mode_nodes.doing_node import node_learn_by_doing
+from core.nodes.learning_mode_nodes.solving_node import node_learn_by_solving
+from core.nodes.learning_mode_nodes.debating_node import node_learn_by_questioning_debating
+from core.nodes.learning_mode_nodes.listening_speaking_node import node_learn_by_listening_speaking
+from core.nodes.learning_mode_nodes.assessment_node import node_learning_by_assessment
 
-from services.ai.schemas import (
+from core.services.ai.schemas import (
     LearnByReadingPayload,
     LearnByWritingPayload,
     LearnByDoingPayload,

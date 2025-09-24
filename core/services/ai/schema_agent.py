@@ -1,7 +1,7 @@
 
 # # services/ai/schema_agent.py
 # # Fetch exam schema/template
-from services.db_operations.assessment_db import get_template_by_target_exam
+from core.services.db_operations.assessment_db import get_template_by_target_exam
 
 class SchemaAgent:
     @staticmethod

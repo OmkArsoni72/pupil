@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
-from api.controllers.rag_controller import RagController
-from api.schemas.rag_schemas import IngestRequest, QARequest, PrereqRequest
+from core.api.controllers.rag_controller import RagController
+from core.api.schemas.rag_schemas import IngestRequest, QARequest, PrereqRequest
 
 router = APIRouter()
 

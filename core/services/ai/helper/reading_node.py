@@ -4,9 +4,9 @@ from typing import Dict, Any
 import anyio
 from langchain_core.runnables import RunnableConfig
 from langchain_google_genai import ChatGoogleGenerativeAI
-from services.ai.schemas import LearnByReadingPayload
-from services.ai.helper.utils import persist_artifact, log_validation_result
-from services.ai.helper.teleprompt_with_media import search_image, bucket_name as MEDIA_BUCKET_NAME
+from core.services.ai.schemas import LearnByReadingPayload
+from core.services.ai.helper.utils import persist_artifact, log_validation_result
+from core.services.ai.helper.teleprompt_with_media import search_image, bucket_name as MEDIA_BUCKET_NAME
 
 # LLM (provider/model can be swapped)
 LLM = ChatGoogleGenerativeAI(

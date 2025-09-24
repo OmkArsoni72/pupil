@@ -4,14 +4,14 @@ from pydantic import BaseModel
 from langchain_core.runnables import RunnableConfig
 from uuid import uuid4
 
-from services.ai.remedy_graph import (
+from core.services.ai.remedy_graph import (
     build_remedy_graph,
     REMEDY_CHECKPOINTER,
     RemedyState,
     RemediationPlan
 )
-from services.ai.content_graph import build_graph as build_content_graph
-from services.db_operations.jobs_db import create_job, update_job
+from core.services.ai.content_graph import build_graph as build_content_graph
+from core.services.db_operations.jobs_db import create_job, update_job
 
 class RemedyJobStatus(BaseModel):
     job_id: str
@@ -119,7 +119,7 @@ async def run_content_jobs_from_remedy_plans(remedy_plans: List[RemediationPlan]
         await create_job(content_job_id, route="REMEDY_CONTENT", payload=content_request)
         
         # Start Content Agent job
-        from services.ai.job_runner import run_job
+        from core.services.ai.job_runner import run_job
         import asyncio
         asyncio.create_task(run_job(content_job_id, "REMEDY", content_request))
         

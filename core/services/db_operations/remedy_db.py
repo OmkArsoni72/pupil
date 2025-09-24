@@ -1,6 +1,6 @@
 from typing import Dict, Any, List, Optional
 from fastapi import HTTPException
-from services.db_operations.base import remedy_plans_collection
+from core.services.db_operations.base import remedy_plans_collection
 from datetime import datetime
 
 async def create_remedy_plan(

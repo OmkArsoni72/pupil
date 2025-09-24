@@ -15,7 +15,7 @@ try:
 except Exception:  # pragma: no cover
     pdfminer_extract_text = None  # type: ignore
 
-from services.ai.pinecone_client import (
+from core.services.ai.pinecone_client import (
     generate_embedding,
     upsert_vectors,
     is_pinecone_available,

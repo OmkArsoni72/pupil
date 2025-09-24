@@ -1,9 +1,9 @@
 from bson import ObjectId
 from fastapi import HTTPException
-from services.db_operations.base import db, get_student_report, get_class_report_by_board_grade_section
+from core.services.db_operations.base import db, get_student_report, get_class_report_by_board_grade_section
 import urllib.parse
-from models.student_report import StudentReport
-from models.class_report import ClassReport
+from core.models.student_report import StudentReport
+from core.models.class_report import ClassReport
 from typing import List, Dict, Any
 
 

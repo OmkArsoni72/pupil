@@ -5,7 +5,7 @@ Extracted from routes/content.py to maintain exact compatibility.
 
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional, Any
-from services.ai.content_graph import Mode
+from core.services.ai.content_graph import Mode
 
 class ContextRefs(BaseModel):
     lesson_script_id: Optional[str] = None

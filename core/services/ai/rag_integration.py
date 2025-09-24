@@ -8,8 +8,8 @@ from typing import Dict, Any, List, Optional
 import os
 from pydantic import BaseModel
 from langchain_google_genai import ChatGoogleGenerativeAI
-from services.db_operations.base import prerequisite_cache_collection
-from services.ai.enhanced_rag_integration import enhanced_rag
+from core.services.db_operations.base import prerequisite_cache_collection
+from core.services.ai.enhanced_rag_integration import enhanced_rag
 import anyio
 
 # LLM for RAG operations

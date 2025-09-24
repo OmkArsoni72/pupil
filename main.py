@@ -9,10 +9,10 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from bson import ObjectId
 
-from api.routes import content, afterhours, details, teacher, user, timetable, assessment, rag
-from api.routes.websocket import sio  # socketio server
-from services.ping_schedular import self_ping
-from services.ai.performance_dashboard import router as performance_router
+from core.api.routes import content, afterhours, details, teacher, user, timetable, assessment, rag
+from core.api.routes.websocket import sio  # socketio server
+from core.services.ping_schedular import self_ping
+from core.services.ai.performance_dashboard import router as performance_router
 import socketio
 
 PORT = int(os.getenv("PORT", 8080))

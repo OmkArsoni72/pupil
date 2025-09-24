@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 import anyio
 from bson import ObjectId
 
-from services.db_operations.base import (
+from core.services.db_operations.base import (
     lessons_collection,
     sessions_collection,
     question_bank_collection,

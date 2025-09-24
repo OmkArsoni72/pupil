@@ -1,4 +1,4 @@
-from services.db_operations.base import (
+from core.services.db_operations.base import (
     template_collection,
     assessment_collection,
     questions_collection,

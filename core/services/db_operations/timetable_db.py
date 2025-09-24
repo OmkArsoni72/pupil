@@ -5,8 +5,8 @@ from bson.errors import InvalidId
 import logging
 from datetime import datetime, time, date
 
-from models.timetable import PDFTimetable, TimetableEvent, TeacherInfo
-from services.db_operations.base import pdf_timetable_collection, timetable_collection, institutions_collection, teacher_class_data_collection
+from core.models.timetable import PDFTimetable, TimetableEvent, TeacherInfo
+from core.services.db_operations.base import pdf_timetable_collection, timetable_collection, institutions_collection, teacher_class_data_collection
 from bson import ObjectId
 
 logger = logging.getLogger(__name__)

@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from typing import List
-from models.teacher import Teacher, Lecture, Chapter
-from api.controllers.teacher_controller import TeacherController
+from core.models.teacher import Teacher, Lecture, Chapter
+from core.api.controllers.teacher_controller import TeacherController
 
 router = APIRouter()
 

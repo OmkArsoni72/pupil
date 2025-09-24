@@ -1,6 +1,6 @@
 from typing import Dict, Any
 from langchain_core.runnables import RunnableConfig
-from services.ai.helper.utils import persist_artifact, log_validation_result
+from core.services.ai.helper.utils import persist_artifact, log_validation_result
 
 async def node_learn_by_playing(state, config: RunnableConfig) -> Dict[str, Any]:
     """
@@ -123,7 +123,7 @@ async def node_learn_by_playing(state, config: RunnableConfig) -> Dict[str, Any]
     await persist_artifact(state.route, "PLAYING", payload, state.req)
     # Validate playing payload structure
     try:
-        from services.ai.schemas import LearnByPlayingPayload
+        from core.services.ai.schemas import LearnByPlayingPayload
         _ = LearnByPlayingPayload(game_links=[url] if url else [], objectives=objectives, difficulty="medium")
         await log_validation_result("PLAYING", True, None, {"has_url": bool(url), "objectives": len(objectives), "gap_type": gap_type})
     except Exception as e:

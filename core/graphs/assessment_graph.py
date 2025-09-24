@@ -5,10 +5,10 @@ Refactored from services/ai/assessment_generator.py
 
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
-from nodes.common_nodes.schema_node import schema_node
-from nodes.common_nodes.context_node import context_node
-from nodes.common_nodes.question_generation_node import question_generation_node
-from nodes.assessment_nodes.assessment_node import assessment_node
+from core.nodes.common_nodes.schema_node import schema_node
+from core.nodes.common_nodes.context_node import context_node
+from core.nodes.common_nodes.question_generation_node import question_generation_node
+from core.nodes.assessment_nodes.assessment_node import assessment_node
 
 
 class AssessmentState(TypedDict, total=False):

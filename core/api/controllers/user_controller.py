@@ -2,14 +2,14 @@ from fastapi import HTTPException, Header
 from typing import List
 from pymongo.errors import PyMongoError
 
-from models.role import TEACHER
-from models.user import (
+from core.models.role import TEACHER
+from core.models.user import (
     find_user_by_email, create_user, get_user, get_users,
     update_user, delete_user, update_user_role, bind_code,
     get_code, find_user_by_uid, serialize_mongo_document
 )
-from services.auth.token import create_access_token, verify_token
-from services.db_operations.user_db import (
+from core.services.auth.token import create_access_token, verify_token
+from core.services.db_operations.user_db import (
     UserBase, UserUpdate, UserResponse, LoginUser, RoleUpdate, CodeBind
 )
 

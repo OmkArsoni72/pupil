@@ -4,7 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel, EmailStr
 from bson import ObjectId
 
-from models.role import TEACHER
+from core.models.role import TEACHER
 
 
 

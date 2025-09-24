@@ -10,8 +10,8 @@ from functools import wraps
 from datetime import datetime, timedelta
 import time
 
-from services.ai.pinecone_client import is_pinecone_available
-from services.ai.enhanced_rag_integration import enhanced_rag
+from core.services.ai.pinecone_client import is_pinecone_available
+from core.services.ai.enhanced_rag_integration import enhanced_rag
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

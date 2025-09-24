@@ -7,7 +7,7 @@ from bson import ObjectId
 from fastapi import HTTPException
 from pymongo.errors import PyMongoError
 
-from services.db_operations.base import jobs_collection
+from core.services.db_operations.base import jobs_collection
 
 
 def _now_iso() -> str:

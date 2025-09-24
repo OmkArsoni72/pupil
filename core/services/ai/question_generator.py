@@ -1,7 +1,7 @@
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
-from services.ai.prompt_templates import assessment_prompt
+from core.services.ai.prompt_templates import assessment_prompt
 import json
 import logging
 import re

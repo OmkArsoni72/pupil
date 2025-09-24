@@ -10,11 +10,11 @@ from datetime import datetime
 import anyio
 from bson import ObjectId
 
-from services.ai.pinecone_client import generate_embedding, upsert_vectors, delete_vectors
-from services.ai.vector_schemas import (
+from core.services.ai.pinecone_client import generate_embedding, upsert_vectors, delete_vectors
+from core.services.ai.vector_schemas import (
     extract_educational_content_metadata, extract_question_metadata, extract_remediation_metadata
 )
-from services.db_operations.base import (
+from core.services.db_operations.base import (
     lessons_collection, question_bank_collection, student_reports_collection
 )
 

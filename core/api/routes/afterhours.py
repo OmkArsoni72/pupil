@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from api.controllers.afterhours_controller import AfterhoursController
+from core.api.controllers.afterhours_controller import AfterhoursController
 
 router = APIRouter()
 

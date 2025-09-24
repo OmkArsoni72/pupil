@@ -2,8 +2,8 @@ import os
 from typing import Dict, Any, List
 import anyio
 from langchain_core.runnables import RunnableConfig
-from services.ai.helper.utils import persist_artifact, log_validation_result
-from services.ai.helper.teleprompt_with_media import search_youtube_video
+from core.services.ai.helper.utils import persist_artifact, log_validation_result
+from core.services.ai.helper.teleprompt_with_media import search_youtube_video
 
 async def node_learn_by_watching(state, config: RunnableConfig) -> Dict[str, Any]:
     """
@@ -171,7 +171,7 @@ async def node_learn_by_watching(state, config: RunnableConfig) -> Dict[str, Any
     }
     # Validate watching payload structure
     try:
-        from services.ai.schemas import LearnByWatchingPayload
+        from core.services.ai.schemas import LearnByWatchingPayload
         # Ensure videos have required fields
         validated_videos = []
         for v in payload["videos"]:

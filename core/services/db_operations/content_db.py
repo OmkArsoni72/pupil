@@ -6,7 +6,7 @@ from uuid import uuid4
 from fastapi import HTTPException
 from pymongo.errors import PyMongoError
 
-from services.db_operations.base import (
+from core.services.db_operations.base import (
     sessions_collection,
     student_reports_collection,
     teacher_class_data_collection,

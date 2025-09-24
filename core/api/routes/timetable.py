@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Form, Body
 from datetime import date
-from api.controllers.timetable_controller import TimetableController, IngestionRequest, PairingRequest
+from core.api.controllers.timetable_controller import TimetableController, IngestionRequest, PairingRequest
 
 router = APIRouter()
 
