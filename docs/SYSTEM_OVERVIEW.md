@@ -37,9 +37,9 @@ PupilTree Agents is an AI-powered educational content generation platform built 
 
 ## 📊 Database Structure
 
-### Three MongoDB Databases
+### Single MongoDB Database
 
-#### 1. **Pupil_teach** (Main Application Database)
+#### **Pupil_teach** (Main Application Database)
 
 **Core Educational Data:**
 
@@ -77,14 +77,14 @@ PupilTree Agents is an AI-powered educational content generation platform built 
 
 - **`dean_dashboard`** - Administrative oversight with attendance and performance metrics
 
-#### 2. **Pupil_learn** (Learning Analytics Database)
+#### 2. **Historical Collections** (No longer used)
 
 **Learning Gap Management:**
 
 - **`gaps`** - Learning gap tracking with history and resolution status
 - **`Student_gaps`** - Student-specific gap management (open/closed/current/historic)
 
-#### 3. **Pupil-Amigo** (AI Components Database)
+#### 3. **AI Components** (Historical Reference)
 
 **AI-Generated Content:**
 

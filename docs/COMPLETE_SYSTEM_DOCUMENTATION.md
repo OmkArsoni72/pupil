@@ -26,17 +26,16 @@ This complete documentation package includes:
          │                       │                       │
          ▼                       ▼                       ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Controllers   │    │  Learning Modes │    │  Three Databases│
+│   Controllers   │    │  Learning Modes │    │  Single Database │
 │   Routes        │    │  (8 Modalities) │    │  Pupil_teach    │
-│   Schemas       │    │  Workflows      │    │  Pupil_learn    │
-└─────────────────┘    └─────────────────┘    │  Pupil-Amigo    │
-                                              └─────────────────┘
+│   Schemas       │    │  Workflows      │    │  (Main DB)      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
 ### Technology Stack
 
 - **Backend**: FastAPI, Python 3.8+
-- **Database**: MongoDB (3 databases, 25+ collections)
+- **Database**: MongoDB (1 database, 25+ collections)
 - **AI/ML**: LangGraph, Google Gemini, Pinecone
 - **Real-time**: Socket.IO, WebSocket support
 - **File Storage**: GridFS, Google Cloud Storage
@@ -44,24 +43,17 @@ This complete documentation package includes:
 
 ## 🗄️ Database Architecture
 
-### Three MongoDB Databases
+### Single MongoDB Database
 
-#### 1. **Pupil_teach** (Main Application - 20+ Collections)
+#### **Pupil_teach** (Main Application Database - 25+ Collections)
 
 - **Educational Data**: `lesson_script`, `sessions`, `question_bank`, `student_reports`
 - **User Management**: `users`, `teacher_class_data`, `institutions`, `invitations`
 - **Assessment**: `templates`, `assessments`, `assessment_review`
 - **Timetable**: `timetable`, `pdf_timetable`, `transfers`
+- **Job Management**: `jobs`, `remedy_plans`
+- **RAG System**: `prerequisite_cache`, `remediation_logs`, `validation_logs`, `session_progress`
 - **Administrative**: `dean_dashboard`, `content_oversight`
-
-#### 2. **Pupil_learn** (Learning Analytics - 2 Collections)
-
-- **Gap Management**: `gaps`, `Student_gaps`
-
-#### 3. **Pupil-Amigo** (AI Components - 3 Collections)
-
-- **AI Content**: `questions_new`, `tutor_chat_history`, `Assesment_questions`
-- **File Storage**: `fs.files`, `fs.chunks`
 
 ## 🚀 API Endpoints (50+ Endpoints)
 

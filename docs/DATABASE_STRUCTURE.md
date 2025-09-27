@@ -2,15 +2,13 @@
 
 ## 🗄️ Overview
 
-The PupilTree Agents system uses **three MongoDB databases** to organize different aspects of the educational platform:
+The PupilTree Agents system uses **one MongoDB database** to organize all aspects of the educational platform:
 
-1. **Pupil_teach** - Main application database
-2. **Pupil_learn** - Learning analytics and gap tracking
-3. **Pupil-Amigo** - AI components and generated content
+1. **Pupil_teach** - Main application database (all collections)
 
 ---
 
-## 📊 Database 1: Pupil_teach (Main Application)
+## 📊 Database: Pupil_teach (Main Application)
 
 ### Core Educational Data Collections
 
@@ -586,7 +584,7 @@ The PupilTree Agents system uses **three MongoDB databases** to organize differe
 
 ---
 
-## 📊 Database 2: Pupil_learn (Learning Analytics)
+## 📊 Additional Collections (Historical Reference)
 
 ### Learning Gap Management
 
@@ -655,7 +653,7 @@ The PupilTree Agents system uses **three MongoDB databases** to organize differe
 
 ---
 
-## 📊 Database 3: Pupil-Amigo (AI Components)
+## 📊 AI Components (Historical Reference)
 
 ### AI-Generated Content
 
