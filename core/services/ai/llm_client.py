@@ -43,13 +43,14 @@ class LLMFactory:
     def __init__(self):
         self.models = {
             "gemini_1.5_flash": self._gemini_1_5_flash_client,
+            "gemini_2.5_flash": self._gemini_2_5_flash_client,
             "gemini_2.5_pro": self._gemini_2_5_pro_client,
             "openai": self._openai_client,
         }
 
-    def get_client(self, model_name: str = "gemini_1.5_flash"):
+    def get_client(self, model_name: str = "gemini_2.5_flash"):
         if not model_name or model_name not in self.models:
-            model_name = "gemini_1.5_flash"
+            model_name = "gemini_2.5_flash"
         return self.models[model_name]()
 
     def _openai_client(self):
@@ -58,10 +59,13 @@ class LLMFactory:
         return ChatOpenAI(model_name="gpt-4", temperature=0.7, openai_api_key=openai_api_key)
 
     def _gemini_1_5_flash_client(self):
-        return GeminiClient(model_name="gemini-1.5-flash", temperature=0.7)
+        return GeminiClient(model_name="gemini-2.5-flash", temperature=0.7)
+
+    def _gemini_2_5_flash_client(self):
+        return GeminiClient(model_name="gemini-2.5-flash-002", temperature=0.6)
 
     def _gemini_2_5_pro_client(self):
-        return GeminiClient(model_name="gemini-2.0-flash-exp", temperature=0.5)
+        return GeminiClient(model_name="gemini-2.5-pro-002", temperature=0.5)
 
 # Usage example:
 llm_factory = LLMFactory()

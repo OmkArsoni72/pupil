@@ -60,7 +60,7 @@ class ContentState(BaseModel):
 
 # --------- LLM (provider/model can be swapped) ---------
 LLM = ChatGoogleGenerativeAI(
-    model="gemini-1.5-flash",
+    model="gemini-2.5-flash",
     temperature=0.2,
     google_api_key=os.environ["GEMINI_API_KEY"],
 )
