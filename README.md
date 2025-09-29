@@ -151,6 +151,10 @@ Run the whole suite:
 python scripts/run_tests.py
 ```
 
+Detailed testing guide (commands, suites, breakpoints, warnings):
+
+- docs/guides/TESTING.md
+
 Good entry tests:
 
 - `tests/test_rag_system.py`

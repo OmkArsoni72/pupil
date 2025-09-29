@@ -3,7 +3,7 @@ import json
 
 import httpx
 
-BASE = os.getenv("NCERT_TEST_BASE", "http://localhost:8000/api")
+BASE = os.getenv("NCERT_TEST_BASE", "http://127.0.0.1:8000/api")
 
 
 def test_ingest_subset():
