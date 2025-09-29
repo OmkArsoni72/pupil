@@ -62,10 +62,10 @@ class LLMFactory:
         return GeminiClient(model_name="gemini-2.5-flash", temperature=0.7)
 
     def _gemini_2_5_flash_client(self):
-        return GeminiClient(model_name="gemini-2.5-flash-002", temperature=0.6)
+        return GeminiClient(model_name="gemini-2.5-flash", temperature=0.6)
 
     def _gemini_2_5_pro_client(self):
-        return GeminiClient(model_name="gemini-2.5-pro-002", temperature=0.5)
+        return GeminiClient(model_name="gemini-2.5-pro", temperature=0.5)
 
 # Usage example:
 llm_factory = LLMFactory()
