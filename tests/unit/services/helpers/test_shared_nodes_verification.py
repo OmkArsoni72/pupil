@@ -20,7 +20,7 @@ from typing import Dict, Any
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Import shared node components to test
-from services.ai.helper.assessment_node import (
+from core.services.ai.helper.assessment_node import (
     _safe_get_session,
     _safe_get_student_report, 
     _extract_ahs_snippets,
@@ -226,9 +226,9 @@ async def test_assessment_node_integration():
     print("\n🔍 Testing Assessment Node Integration...")
     
     # Mock the persist_artifact and log_validation_result functions
-    with patch('services.ai.helper.assessment_node.persist_artifact') as mock_persist, \
-         patch('services.ai.helper.assessment_node.log_validation_result') as mock_log, \
-         patch('services.ai.helper.assessment_node.LLM') as mock_llm:
+    with patch('core.services.ai.helper.assessment_node.persist_artifact') as mock_persist, \
+         patch('core.services.ai.helper.assessment_node.log_validation_result') as mock_log, \
+         patch('core.services.ai.helper.assessment_node.LLM') as mock_llm:
         
         # Setup LLM mock response
         mock_response = MagicMock()

@@ -12,10 +12,10 @@ import uuid
 
 async def question_generation_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """Generate questions using provided LLM client."""
-    print(f"🔍 [question_generation_node] Starting question generation with LLM: {state.get('llm_model', 'gemini_1.5_flash')}")
+    print(f"🔍 [question_generation_node] Starting question generation with LLM: {state.get('llm_model', 'gemini_2.5_flash')}")
     
     try:
-        llm_client = llm_factory.get_client(state.get("llm_model", "gemini_1.5_flash"))
+        llm_client = llm_factory.get_client(state.get("llm_model", "gemini_2.5_flash"))
         assessment_json = await QuestionGenerator.generate_questions({
             "llm_client": llm_client,
             "schema": state.get("schema"),

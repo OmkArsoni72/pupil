@@ -21,7 +21,7 @@ class LearnByReadingPayload(BaseModel):
 
 
 class LearnByWritingPayload(BaseModel):
-    prompts: List[str] = Field(default_factory=list, min_items=1)
+    prompts: List[str] = Field(default_factory=list)
     difficulty: Optional[str] = Field(default=None)
 
 
@@ -37,7 +37,7 @@ class LearnByDoingPayload(BaseModel):
 class LearnByListeningSpeakingPayload(BaseModel):
     title: Optional[str] = None
     script: str
-    verbal_checks: List[str] = Field(default_factory=list, min_items=1)
+    verbal_checks: List[str] = Field(default_factory=list)
     difficulty: Optional[str] = Field(default=None)
 
 

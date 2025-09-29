@@ -30,7 +30,7 @@ class RAGSystemTester:
     def _check_availability(self):
         """Check if required services are available."""
         try:
-            from services.ai.pinecone_client import is_pinecone_available
+            from core.services.ai.pinecone_client import is_pinecone_available
             
             self.pinecone_available = is_pinecone_available()
             logger.info(f"Pinecone available: {self.pinecone_available}")
@@ -44,7 +44,7 @@ class RAGSystemTester:
         logger.info("=" * 50)
         
         try:
-            from services.ai.floor_wise_prerequisite_discovery import FloorWisePrerequisiteDiscovery
+            from core.services.ai.floor_wise_prerequisite_discovery import FloorWisePrerequisiteDiscovery
             
             # Create test foundational gap
             foundational_gap = {
@@ -88,7 +88,7 @@ class RAGSystemTester:
         logger.info("=" * 50)
         
         try:
-            from services.ai.multi_cycle_remediation_orchestrator import MultiCycleRemediationOrchestrator
+            from core.services.ai.multi_cycle_remediation_orchestrator import MultiCycleRemediationOrchestrator
             
             # Create test foundational gap
             foundational_gap = {
@@ -143,7 +143,7 @@ class RAGSystemTester:
         logger.info("=" * 50)
         
         try:
-            from services.ai.enhanced_rag_integration import EnhancedRAGIntegration
+            from core.services.ai.enhanced_rag_integration import EnhancedRAGIntegration
             
             # Initialize RAG integration
             rag = EnhancedRAGIntegration()
@@ -197,7 +197,7 @@ class RAGSystemTester:
         logger.info("=" * 50)
         
         try:
-            from services.ai.pinecone_sync_automation import PineconeSyncAutomation
+            from core.services.ai.pinecone_sync_automation import PineconeSyncAutomation
             
             # Initialize sync automation
             sync_automation = PineconeSyncAutomation()
@@ -245,7 +245,7 @@ class RAGSystemTester:
             
             # Step 1: Floor-wise prerequisite discovery
             logger.info("\n🔍 Step 1: Discovering Prerequisites...")
-            from services.ai.floor_wise_prerequisite_discovery import FloorWisePrerequisiteDiscovery
+            from core.services.ai.floor_wise_prerequisite_discovery import FloorWisePrerequisiteDiscovery
             discovery = FloorWisePrerequisiteDiscovery()
             prerequisites = await discovery.discover_prerequisites(foundational_gap)
             
@@ -256,7 +256,7 @@ class RAGSystemTester:
             
             # Step 2: Multi-cycle remediation
             logger.info("\n🔄 Step 2: Executing Multi-cycle Remediation...")
-            from services.ai.multi_cycle_remediation_orchestrator import MultiCycleRemediationOrchestrator
+            from core.services.ai.multi_cycle_remediation_orchestrator import MultiCycleRemediationOrchestrator
             orchestrator = MultiCycleRemediationOrchestrator()
             
             # First cycle
@@ -279,7 +279,7 @@ class RAGSystemTester:
             
             # Step 3: Verify RAG integration
             logger.info("\n🔍 Step 3: Verifying RAG Integration...")
-            from services.ai.enhanced_rag_integration import EnhancedRAGIntegration
+            from core.services.ai.enhanced_rag_integration import EnhancedRAGIntegration
             rag = EnhancedRAGIntegration()
             
             # Query for related content

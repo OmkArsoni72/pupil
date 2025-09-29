@@ -5,8 +5,8 @@ Demonstrates the complete flow from classified gaps to remediation plans.
 
 import asyncio
 import json
-from services.ai.remedy_graph import build_remedy_graph, RemedyState, GapEvidence
-from services.ai.remedy_job_runner import run_remedy_job
+from core.services.ai.remedy_graph import build_remedy_graph, RemedyState, GapEvidence
+from core.services.ai.remedy_job_runner import run_remedy_job
 
 async def test_remedy_agent():
     """
@@ -93,7 +93,7 @@ async def test_gap_classification():
     """
     print("\n🔍 [CLASSIFICATION_TEST] Testing gap classification...")
     
-    from services.ai.remedy_graph import gap_classifier_node, RemedyState, GapEvidence
+    from core.services.ai.remedy_graph import gap_classifier_node, RemedyState, GapEvidence
     
     test_gaps = [
         GapEvidence(code="basic_arithmetic_facts", evidence=["Cannot recall multiplication tables"]),

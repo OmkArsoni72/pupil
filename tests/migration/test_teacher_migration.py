@@ -8,8 +8,8 @@ import asyncio
 import pytest
 from fastapi.testclient import TestClient
 from datetime import datetime, timedelta
-from models.teacher import Teacher, Lecture, Chapter
-from api.controllers.teacher_controller import TeacherController
+from core.models.teacher import Teacher, Lecture, Chapter
+from core.api.controllers.teacher_controller import TeacherController
 import sys
 import os
 
@@ -23,6 +23,7 @@ async def test_teacher_controller_methods():
     # Test 1: Create Teacher
     print("\n1. Testing create_teacher...")
     test_teacher = Teacher(
+        id=None,
         name="Test Teacher",
         email="test@example.com",
         calendar_id="test_calendar_id"
@@ -91,21 +92,21 @@ def test_import_structure():
     print("\nTesting import structure...")
     
     try:
-        from api.controllers.teacher_controller import TeacherController
+        from core.api.controllers.teacher_controller import TeacherController
         print("✓ TeacherController import successful")
     except ImportError as e:
         print(f"✗ TeacherController import failed: {e}")
         return False
     
     try:
-        from api.routes.teacher import router
+        from core.api.routes.teacher import router
         print("✓ Teacher router import successful")
     except ImportError as e:
         print(f"✗ Teacher router import failed: {e}")
         return False
     
     try:
-        from services.calendar import create_event, delete_event
+        from core.services.calendar import create_event, delete_event
         print("✓ Calendar services import successful")
     except ImportError as e:
         print(f"✗ Calendar services import failed: {e}")

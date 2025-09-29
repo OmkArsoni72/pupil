@@ -8,7 +8,7 @@ import os
 import asyncio
 import sys
 from dotenv import load_dotenv
-from services.ai.pinecone_client import generate_embedding, is_pinecone_available
+from core.services.ai.pinecone_client import generate_embedding, is_pinecone_available
 
 # Load environment variables
 load_dotenv()

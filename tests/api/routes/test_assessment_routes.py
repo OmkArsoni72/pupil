@@ -17,7 +17,7 @@ def test_generate_assessment_enqueues(monkeypatch, client, assessment_req):
     async def fake_update_job_status(job_id, status):
         return None
 
-    async def fake_process_job(params):
+    async def fake_process_job(self, params):
         return {"job_id": params["job_id"], "status": "completed", "result": {"questions": []}}
 
     monkeypatch.setattr(
@@ -40,8 +40,9 @@ def test_assessment_status_ok(monkeypatch, client):
     async def fake_get_by_job(job_id):
         return {"status": "completed", "_id": "A-1"}
 
+    # Patch the symbol as imported into the controller module (not the source module)
     monkeypatch.setattr(
-        "core.services.db_operations.assessment_db.get_assessment_by_job_id",
+        "core.api.controllers.assessment_controller.get_assessment_by_job_id",
         fake_get_by_job,
     )
     r = client.get("/api/assessments/status/J-1")

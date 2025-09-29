@@ -67,8 +67,8 @@ async def generate_assessment(params: dict, job_id: str | None = None) -> str:
 
     # Node: generate questions using provided LLM client
     async def generate_questions_node(state: AssessmentState) -> AssessmentState:
-        print(f"🔍 [generate_questions] Starting question generation with LLM: {state.get('llm_model', 'gemini_1.5_flash')}")
-        llm_client = llm_factory.get_client(state.get("llm_model", "gemini_1.5_flash"))
+        print(f"🔍 [generate_questions] Starting question generation with LLM: {state.get('llm_model', 'gemini_2.5_flash')}")
+        llm_client = llm_factory.get_client(state.get("llm_model", "gemini_2.5_flash"))
         assessment_json = await QuestionGenerator.generate_questions({
             "llm_client": llm_client,
             "schema": state.get("schema"),

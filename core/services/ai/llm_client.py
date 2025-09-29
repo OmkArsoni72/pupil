@@ -1,10 +1,8 @@
 import os
 import google.generativeai as genai
-from langchain_community.chat_models import ChatOpenAI
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage
 import asyncio
-
 class GeminiClient:
     def __init__(self, model_name: str, temperature: float = 0.7):
         self.model_name = model_name
@@ -42,10 +40,11 @@ class GeminiClient:
 class LLMFactory:
     def __init__(self):
         self.models = {
-            "gemini_1.5_flash": self._gemini_1_5_flash_client,
             "gemini_2.5_flash": self._gemini_2_5_flash_client,
-            "gemini_2.5_pro": self._gemini_2_5_pro_client,
-            "openai": self._openai_client,
+            # Keep alias to avoid breakages if older code passes 1.5 key
+            "gemini_1.5_flash": self._gemini_2_5_flash_client,
+            # Map any 'pro' requests to flash to enforce single-model policy
+            "gemini_2.5_pro": self._gemini_2_5_flash_client,
         }
 
     def get_client(self, model_name: str = "gemini_2.5_flash"):
@@ -53,26 +52,14 @@ class LLMFactory:
             model_name = "gemini_2.5_flash"
         return self.models[model_name]()
 
-    def _openai_client(self):
-        # Pull key from env for OpenAI
-        openai_api_key = os.getenv("OPENAI_API_KEY")
-        return ChatOpenAI(model_name="gpt-4", temperature=0.7, openai_api_key=openai_api_key)
-
-    def _gemini_1_5_flash_client(self):
-        return GeminiClient(model_name="gemini-2.5-flash", temperature=0.7)
-
     def _gemini_2_5_flash_client(self):
         return GeminiClient(model_name="gemini-2.5-flash", temperature=0.6)
-
-    def _gemini_2_5_pro_client(self):
-        return GeminiClient(model_name="gemini-2.5-pro", temperature=0.5)
 
 # Usage example:
 llm_factory = LLMFactory()
 
-# No environment or model provided, defaults to Gemini 1.5 Flash
+# No environment or model provided, defaults to Gemini 2.5 Flash
 llm = llm_factory.get_client()
 
-# Or explicitly specify:
-# llm_openai = llm_factory.get_client("openai")
-llm_gemini_pro = llm_factory.get_client("gemini_2.5_pro")
+# Or explicitly specify different keys (aliases map to 2.5 flash):
+llm_gemini_pro = llm_factory.get_client("gemini_2.5_flash")

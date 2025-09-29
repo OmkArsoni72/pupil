@@ -16,11 +16,11 @@ def test_imports():
     
     try:
         # Test main content graph
-        from services.ai.content_graph import build_graph, State, CHECKPOINTER
+        from core.services.ai.content_graph import build_graph, State, CHECKPOINTER
         print("✅ services.ai.content_graph imported successfully")
         
         # Test helper nodes
-        from services.ai.helper import (
+        from core.services.ai.helper import (
             orchestrator_node,
             node_learn_by_reading,
             node_learn_by_writing,
@@ -37,7 +37,7 @@ def test_imports():
         print("✅ All helper nodes imported successfully")
         
         # Test schemas
-        from services.ai.schemas import (
+        from core.services.ai.schemas import (
             LearnByReadingPayload,
             LearnByWritingPayload,
             LearnByDoingPayload,
@@ -59,7 +59,7 @@ def test_graph_building():
     print("\n🧪 Testing graph building...")
     
     try:
-        from services.ai.content_graph import build_graph
+        from core.services.ai.content_graph import build_graph
         
         # Test with a simple set of modes
         test_modes = ["learn_by_reading", "learn_by_writing"]
@@ -79,7 +79,7 @@ def test_state_creation():
     print("\n🧪 Testing State creation...")
     
     try:
-        from services.ai.content_graph import State
+        from core.services.ai.content_graph import State
         
         # Test AHS state
         ahs_state = State(

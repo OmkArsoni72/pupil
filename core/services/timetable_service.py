@@ -106,7 +106,7 @@ async def _parse_timetable_with_detailed_prompt(pdf_content: bytes, prompt: str)
     logger.info("Sending request to Gemini API...")
     try:
 
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         pdf_file_for_api = {
             'mime_type': 'application/pdf',
             'data': pdf_content

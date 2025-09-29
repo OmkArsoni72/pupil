@@ -6,7 +6,7 @@ This script tests the complete LangGraph pipeline for assessment generation
 
 import asyncio
 import json
-from services.ai.assessment_generator import generate_assessment
+from core.services.ai.assessment_generator import generate_assessment
 
 async def test_assessment_generation():
     """Test the complete assessment generation flow"""
@@ -49,7 +49,7 @@ async def test_assessment_generation():
 
 async def test_context_agent():
     """Test the ContextAgent independently"""
-    from services.ai.context_agent import ContextAgent
+    from core.services.ai.context_agent import ContextAgent
     
     print("\n🧪 Testing ContextAgent")
     
@@ -73,7 +73,7 @@ async def test_context_agent():
 
 async def test_schema_agent():
     """Test the SchemaAgent independently"""
-    from services.ai.schema_agent import SchemaAgent
+    from core.services.ai.schema_agent import SchemaAgent
     
     print("\n🧪 Testing SchemaAgent")
     

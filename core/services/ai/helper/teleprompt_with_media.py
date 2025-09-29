@@ -211,7 +211,7 @@ def search_image(grade, query: str, bucket_name: str,lesson_context) -> str | No
     # Step 1: Rephrase query using Gemini Pro
     try:
         genai_.configure(api_key=GEMINI_API_KEY)
-        text_model = genai_.GenerativeModel("gemini-2.0-flash")
+        text_model = genai_.GenerativeModel("gemini-2.5-flash")
         prompt = f"""You are an AI prompt engineer for Imagen 3.0 generating **educational images** for Grade {grade} students.
 
 This is the textbook lesson context: {lesson_context}

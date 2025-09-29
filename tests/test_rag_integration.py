@@ -8,8 +8,8 @@ import asyncio
 import os
 import sys
 from dotenv import load_dotenv
-from services.ai.enhanced_rag_integration import enhanced_rag
-from services.ai.pinecone_client import is_pinecone_available
+from core.services.ai.enhanced_rag_integration import enhanced_rag
+from core.services.ai.pinecone_client import is_pinecone_available
 
 # Load environment variables
 load_dotenv()

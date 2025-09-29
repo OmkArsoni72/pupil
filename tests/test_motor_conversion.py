@@ -13,7 +13,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 async def test_database_connections():
     """Test basic database connectivity with Motor."""
     try:
-        from services.db_operations.base import client, db, assessment_collection, jobs_collection, remedy_plans_collection
+        from core.services.db_operations.base import client, db, assessment_collection, jobs_collection, remedy_plans_collection
         
         print("Successfully imported Motor client and collections")
         
@@ -33,7 +33,7 @@ async def test_database_connections():
 async def test_assessment_operations():
     """Test the assessment operations that were causing the original bug."""
     try:
-        from services.db_operations.assessment_db import update_job_status, mark_job_failed, get_assessment_by_job_id
+        from core.services.db_operations.assessment_db import update_job_status, mark_job_failed, get_assessment_by_job_id
         
         test_job_id = f"test_job_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
         
@@ -63,7 +63,7 @@ async def test_assessment_operations():
 async def test_jobs_operations():
     """Test the jobs operations that used anyio wrappers."""
     try:
-        from services.db_operations.jobs_db import create_job, update_job, get_job
+        from core.services.db_operations.jobs_db import create_job, update_job, get_job
         
         test_job_id = f"test_jobs_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
         
@@ -92,7 +92,7 @@ async def test_jobs_operations():
 async def test_remedy_operations():
     """Test the remedy operations that used anyio wrappers."""
     try:
-        from services.db_operations.remedy_db import create_remedy_plan, get_remedy_plan, update_remedy_plan_status
+        from core.services.db_operations.remedy_db import create_remedy_plan, get_remedy_plan, update_remedy_plan_status
         
         test_remedy_id = f"test_remedy_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
         
@@ -127,7 +127,7 @@ async def test_remedy_operations():
 async def cleanup_test_data():
     """Clean up test data created during testing."""
     try:
-        from services.db_operations.base import assessment_collection, jobs_collection, remedy_plans_collection
+        from core.services.db_operations.base import assessment_collection, jobs_collection, remedy_plans_collection
         
         # Clean up test documents
         await assessment_collection.delete_many({"job_id": {"$regex": "^test_"}})

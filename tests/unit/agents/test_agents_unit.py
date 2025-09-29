@@ -35,7 +35,8 @@ async def test_content_agent_modes(monkeypatch):
         def compile(self):
             return FakeCompiled()
 
-    monkeypatch.setattr(agent, "graph", FakeGraph)
+    # Set to an instance so `self.graph(active_modes)` calls __call__ instead of class init
+    monkeypatch.setattr(agent, "graph", FakeGraph())
     res = await agent.execute({"route": "AHS", "modes": ["learn_by_reading"], "req": {"topic": "T"}})
     assert res["db_handles"]["AHS"] == "sessions/1"
 

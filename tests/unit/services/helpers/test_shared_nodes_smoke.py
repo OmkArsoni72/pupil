@@ -10,7 +10,7 @@ import os
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from services.ai.helper.assessment_node import (
+from core.services.ai.helper.assessment_node import (
     _safe_get_session,
     _safe_get_student_report,
     _extract_ahs_snippets,

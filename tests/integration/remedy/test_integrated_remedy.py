@@ -5,7 +5,7 @@ Tests the contentGenerationForRemedies route with internal Remedy Agent integrat
 
 import asyncio
 import json
-from services.ai.integrated_remedy_runner import run_integrated_remedy_job, INTEGRATED_REMEDY_JOBS
+from core.services.ai.integrated_remedy_runner import run_integrated_remedy_job, INTEGRATED_REMEDY_JOBS
 
 async def test_integrated_remedy_flow():
     """
@@ -91,7 +91,7 @@ async def test_remedy_agent_integration():
     """
     print("\n🔍 [REMEDY_INTEGRATION_TEST] Testing Remedy Agent integration...")
     
-    from services.ai.remedy_graph import build_remedy_graph, RemedyState, GapEvidence
+    from core.services.ai.remedy_graph import build_remedy_graph, RemedyState, GapEvidence
     
     # Test data
     classified_gaps = [

@@ -8,9 +8,9 @@ import sys
 import json
 from datetime import datetime
 
-# Test the controller directly first
+# Test the controller directly first (updated import path)
 try:
-    from api.controllers.afterhours_controller import AfterhoursController
+    from core.api.controllers.afterhours_controller import AfterhoursController
     print("[OK] Controller import successful")
     
     # Test controller methods
@@ -36,9 +36,9 @@ except Exception as e:
     print(f"[ERROR] Controller test failed: {e}")
     sys.exit(1)
 
-# Test the route import
+# Test the route import (updated import path)
 try:
-    from api.routes.afterhours import router
+    from core.api.routes.afterhours import router
     print("[OK] Route import successful")
 except Exception as e:
     print(f"[ERROR] Route import failed: {e}")
