@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remediation - PupilTeach</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+  <div class="teacher-app">
+    <aside class="sidebar">
+      <div class="sidebar-header"><div class="logo"><span style="font-size:2rem;">🎓</span> PupilPrep</div></div>
+      <nav class="sidebar-nav">
+        <div class="nav-item" onclick="location='dashboard.html'"><span>📊</span> Dashboard</div>
+        <div class="nav-item" onclick="location='content-generator.html'"><span>🤖</span> Content AI</div>
+        <div class="nav-item" onclick="location='assessment.html'"><span>📋</span> Assessments</div>
+        <div class="nav-item" onclick="location='reports.html'"><span>📈</span> Reports</div>
+        <div class="nav-item" onclick="location='timetable.html'"><span>📅</span> Timetable</div>
+        <div class="nav-item active"><span>🎯</span> Remediation</div>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="top-header"><h2 style="margin:0;">Remediation Tracker 🎯</h2></header>
+
+      <div class="content-area">
+        <h1>Learning Gaps & Remediation</h1>
+        
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:1rem;margin-bottom:2rem;">
+          <div class="card" style="text-align:center;padding:1rem;">
+            <div style="font-size:1.5rem;font-weight:bold;color:#4A90E2;">23</div>
+            <div style="font-size:0.75rem;color:#757575;">Total Gaps</div>
+          </div>
+          <div class="card" style="text-align:center;padding:1rem;">
+            <div style="font-size:1.5rem;font-weight:bold;color:#F5A623;">12</div>
+            <div style="font-size:0.75rem;color:#757575;">Knowledge</div>
+          </div>
+          <div class="card" style="text-align:center;padding:1rem;">
+            <div style="font-size:1.5rem;font-weight:bold;color:#D0021B;">8</div>
+            <div style="font-size:0.75rem;color:#757575;">Conceptual</div>
+          </div>
+          <div class="card" style="text-align:center;padding:1rem;">
+            <div style="font-size:1.5rem;font-weight:bold;color:#F8E71C;">3</div>
+            <div style="font-size:0.75rem;color:#757575;">Application</div>
+          </div>
+          <div class="card" style="text-align:center;padding:1rem;">
+            <div style="font-size:1.5rem;font-weight:bold;color:#7ED321;">15</div>
+            <div style="font-size:0.75rem;color:#757575;">Closed</div>
+          </div>
+          <div class="card" style="text-align:center;padding:1rem;">
+            <div style="font-size:1.5rem;font-weight:bold;color:#757575;">2.1</div>
+            <div style="font-size:0.75rem;color:#757575;">Avg Cycles</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:2rem;">
+          <h3>Generate Remediation Plan</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+            <div>
+              <label class="input-label">Student ID *</label>
+              <input type="text" id="studentId" class="input-field" placeholder="student_001" value="student_001">
+            </div>
+            <div>
+              <label class="input-label">Duration (minutes)</label>
+              <input type="number" id="duration" class="input-field" value="30" min="5" max="40">
+            </div>
+            <div>
+              <label class="input-label">Gap Type *</label>
+              <select id="gapType" class="input-field">
+                <option value="conceptual_gap">Conceptual Gap</option>
+                <option value="knowledge_gap">Knowledge Gap</option>
+                <option value="application_gap">Application Gap</option>
+              </select>
+            </div>
+            <div>
+              <label class="input-label">Gap Code *</label>
+              <input type="text" id="gapCode" class="input-field" placeholder="gap_001" value="gap_newton_laws">
+            </div>
+          </div>
+          <div style="margin-top:1rem;">
+            <label class="input-label">Evidence (comma separated)</label>
+            <textarea id="evidence" class="input-field" rows="2" placeholder="Failed question 3, Struggled with problem solving">Failed to explain Newton's Third Law, Incorrect force calculations</textarea>
+          </div>
+          <button class="btn btn-primary" onclick="generateRemediation()" style="margin-top:1rem;width:100%;">Generate Remediation</button>
+        </div>
+
+        <div id="remediationProgress" class="card hidden" style="margin-bottom:2rem;">
+          <h3>Generating Remediation... ⏳</h3>
+          <div style="margin:1.5rem 0;">
+            <div class="progress-bar"><div id="remediationBar" class="progress-bar-fill" style="width:0%;"></div></div>
+          </div>
+          <div id="remediationStatus" style="font-size:0.875rem;color:#757575;"></div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-bottom:1.5rem;">Students with Active Gaps</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Gap Type</th>
+                <th>Topic</th>
+                <th>Cycle</th>
+                <th>Progress</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Ananya Sharma</strong></td>
+                <td><span class="badge badge-danger">Conceptual</span></td>
+                <td>Newton's Laws</td>
+                <td>Cycle 2</td>
+                <td>
+                  <div class="progress-bar" style="width:100px;">
+                    <div class="progress-bar-fill warning" style="width:70%;"></div>
+                  </div>
+                </td>
+                <td><span class="badge badge-warning">In Progress</span></td>
+              </tr>
+              <tr>
+                <td><strong>Rahul Verma</strong></td>
+                <td><span class="badge" style="background:#FFF3E0;color:#F5A623;">Knowledge</span></td>
+                <td>Photosynthesis</td>
+                <td>Cycle 1</td>
+                <td>
+                  <div class="progress-bar" style="width:100px;">
+                    <div class="progress-bar-fill" style="width:50%;"></div>
+                  </div>
+                </td>
+                <td><span class="badge badge-primary">Active</span></td>
+              </tr>
+              <tr>
+                <td><strong>Priya Patel</strong></td>
+                <td><span class="badge badge-success">Conceptual</span></td>
+                <td>Cell Structure</td>
+                <td>Cycle 2</td>
+                <td>
+                  <div class="progress-bar" style="width:100px;">
+                    <div class="progress-bar-fill success" style="width:100%;"></div>
+                  </div>
+                </td>
+                <td><span class="badge badge-success">Closed</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script>
+    async function generateRemediation() {
+      const studentId = document.getElementById('studentId').value;
+      const gapCode = document.getElementById('gapCode').value;
+      if (!studentId || !gapCode) return showToast('Please fill required fields', 'error');
+
+      try {
+        document.getElementById('remediationProgress').classList.remove('hidden');
+        const evidenceText = document.getElementById('evidence').value;
+        const evidenceList = evidenceText ? evidenceText.split(',').map(e => e.trim()) : [];
+        
+        const response = await API.generateRemedy({
+          teacher_class_id: "class_001",
+          student_id: studentId,
+          duration_minutes: parseInt(document.getElementById('duration').value),
+          learning_gaps: [{
+            code: gapCode,
+            type: document.getElementById('gapType').value,
+            type_label: document.getElementById('gapType').selectedOptions[0].text,
+            evidence: evidenceList
+          }],
+          context_refs: {
+            lesson_script_id: null,
+            in_class_question_ids: null,
+            recent_session_ids: [],
+            recent_performance: null
+          },
+          modes: null,
+          options: null
+        });
+        
+        showToast('Remediation generation started!', 'success');
+        pollJobStatus(response.job_id, (status) => {
+          const percent = Math.min((status.progress || 0) * 100, 100);
+          document.getElementById('remediationBar').style.width = percent + '%';
+          document.getElementById('remediationStatus').textContent = status.details || 'Processing...';
+          
+          if (status.status === 'completed') {
+            showToast('Remediation plan ready!', 'success');
+          } else if (status.status === 'failed') {
+            showToast('Generation failed: ' + status.error, 'error');
+          }
+        });
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>

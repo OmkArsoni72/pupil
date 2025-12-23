@@ -39,14 +39,19 @@ class EnhancedJSONResponse(JSONResponse):
 app = FastAPI(default_response_class=EnhancedJSONResponse)
 
 # CORS Configuration
-origins = ["http://localhost:8080"]  # Add your frontend origins
+origins = [
+    "http://localhost:8080",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "*"  # Allow all origins for development
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # Allow all origins
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
 )
 
 # Routers

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assessment Generator - PupilTeach</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+  <div class="teacher-app">
+    <aside class="sidebar">
+      <div class="sidebar-header"><div class="logo"><span style="font-size:2rem;">🎓</span> PupilPrep</div></div>
+      <nav class="sidebar-nav">
+        <div class="nav-item" onclick="location='dashboard.html'"><span>📊</span> Dashboard</div>
+        <div class="nav-item" onclick="location='content-generator.html'"><span>🤖</span> Content AI</div>
+        <div class="nav-item active"><span>📋</span> Assessments</div>
+        <div class="nav-item" onclick="location='reports.html'"><span>📈</span> Reports</div>
+        <div class="nav-item" onclick="location='timetable.html'"><span>📅</span> Timetable</div>
+        <div class="nav-item" onclick="location='remediation.html'"><span>🎯</span> Remediation</div>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="top-header"><h2 style="margin:0;">Assessment Generator 📋</h2></header>
+
+      <div class="content-area">
+        <h1>Create New Assessment</h1>
+        
+        <div class="card" style="margin-bottom:2rem;">
+          <div class="input-group">
+            <label class="input-label">Assessment Title *</label>
+            <input type="text" id="title" class="input-field" placeholder="e.g., Physics - Newton's Laws Test">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="input-group">
+              <label class="input-label">Grade</label>
+              <select id="grade" class="input-field">
+                <option>Grade 9</option>
+                <option>Grade 10</option>
+                <option>Grade 11</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Subject</label>
+              <select id="subject" class="input-field">
+                <option>Physics</option>
+                <option>Chemistry</option>
+                <option>Biology</option>
+              </select>
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Topics (comma separated)</label>
+            <input type="text" id="topics" class="input-field" placeholder="e.g., Newton's First Law, Newton's Second Law">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
+            <div class="input-group">
+              <label class="input-label">Total Marks</label>
+              <input type="number" id="marks" class="input-field" value="100">
+            </div>
+            <div class="input-group">
+              <label class="input-label">Duration (minutes)</label>
+              <input type="number" id="duration" class="input-field" value="60">
+            </div>
+            <div class="input-group">
+              <label class="input-label">Total Questions</label>
+              <input type="number" id="questions" class="input-field" value="20">
+            </div>
+          </div>
+          <button class="btn btn-primary btn-lg w-full" onclick="generateAssessment()">Generate Assessment</button>
+        </div>
+
+        <div id="assessmentProgress" class="card hidden">
+          <h3>Generating Assessment... ⏳</h3>
+          <div style="margin:1.5rem 0;">
+            <div class="progress-bar"><div id="progressBar" class="progress-bar-fill" style="width:0%;"></div></div>
+          </div>
+          <p id="statusText" style="color:#757575;"></p>
+        </div>
+
+        <div id="assessmentResult" class="card hidden">
+          <h3>✅ Assessment Generated!</h3>
+          <div style="margin-top:1rem;padding:1.5rem;background:#E3F2FD;border-radius:12px;">
+            <h4 id="resultTitle"></h4>
+            <p style="margin-top:0.5rem;color:#757575;" id="resultDetails"></p>
+            <div style="margin-top:1rem;display:flex;gap:1rem;">
+              <button class="btn btn-primary">Preview Assessment</button>
+              <button class="btn btn-outline">Assign to Students</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script>
+    async function generateAssessment() {
+      const title = document.getElementById('title').value;
+      if (!title) return showToast('Please enter assessment title', 'error');
+
+      try {
+        document.getElementById('assessmentProgress').classList.remove('hidden');
+        const grade = document.getElementById('grade').value;
+        const subject = document.getElementById('subject').value;
+        const topics = document.getElementById('topics').value.split(',').map(t => t.trim());
+        
+        const response = await API.generateAssessment({
+          target_exam: `${subject}_${grade}_${title.replace(/\s+/g, '_')}`,
+          exam_type: "monthly",
+          class: grade,
+          subject: subject,
+          topics: topics,
+          total_marks: parseInt(document.getElementById('marks').value),
+          duration_minutes: parseInt(document.getElementById('duration').value),
+          question_count: parseInt(document.getElementById('questions').value),
+          previous_topics: topics,
+          learning_gaps: []
+        });
+
+        showToast('Assessment generation started!', 'success');
+        
+        // Poll status
+        const checkStatus = async () => {
+          try {
+            const status = await API.getAssessmentStatus(response.job_id);
+            const progress = (status.progress || 0) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('statusText').textContent = status.details || 'Generating questions...';
+            
+            if (status.status === 'completed') {
+              document.getElementById('assessmentProgress').classList.add('hidden');
+              document.getElementById('assessmentResult').classList.remove('hidden');
+              document.getElementById('resultTitle').textContent = title;
+              document.getElementById('resultDetails').textContent = `${document.getElementById('questions').value} questions generated • ${document.getElementById('marks').value} marks • ${document.getElementById('duration').value} minutes`;
+              showToast('Assessment ready!', 'success');
+            } else if (status.status !== 'failed') {
+              setTimeout(checkStatus, 2000);
+            }
+          } catch (e) {}
+        };
+        checkStatus();
+      } catch (error) {}
+    }
+  </script>
+</body>
+</html>

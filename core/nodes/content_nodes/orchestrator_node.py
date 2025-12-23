@@ -45,8 +45,9 @@ async def orchestrator_node(state, config: RunnableConfig) -> Dict[str, Any]:
     print(f"🔧 [ORCHESTRATOR] Selected modes: {selected_modes}")
 
     # F3: Extract F3 orchestration specifications if available
-    f3_specs = req.get("options", {}).get("content_specifications", {})
-    gap_type = req.get("options", {}).get("gap_type")
+    options = req.get("options") or {}
+    f3_specs = options.get("content_specifications", {})
+    gap_type = options.get("gap_type")
     
     # Build lightweight context bundle from refs for use in prompts
     context_refs = req.get("context_refs") or {}

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home - PupilLearn</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <style>
+    .student-app {
+      max-width: 100vw;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .student-header {
+      background: rgba(255,255,255,0.1);
+      padding: 1.5rem;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .student-content {
+      padding: 1.5rem;
+    }
+    .student-card {
+      background: white;
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-md);
+    }
+    .learning-modes-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+    @media (max-width: 1200px) {
+      .learning-modes-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    @media (max-width: 768px) {
+      .learning-modes-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="student-app">
+    <header class="student-header">
+      <div>
+        <h2 style="margin:0;">🎓 PupilLearn</h2>
+        <p style="margin:0;opacity:0.9;font-size:0.875rem;">Welcome back, Student!</p>
+      </div>
+      <div style="display:flex;gap:1rem;">
+        <button class="btn" style="background:rgba(255,255,255,0.2);color:white;" onclick="location='../index.html'">🏠</button>
+        <button class="btn" style="background:rgba(255,255,255,0.2);color:white;" onclick="location='profile.html'">👤</button>
+      </div>
+    </header>
+
+    <div class="student-content">
+      <div class="student-card">
+        <h3 style="margin-bottom:1.5rem;">📚 Today's Tasks</h3>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
+          <div style="text-align:center;padding:1rem;background:#F0F9FF;border-radius:8px;">
+            <div style="font-size:2rem;font-weight:bold;color:#4A90E2;">3</div>
+            <div style="font-size:0.875rem;color:#757575;">Pending Tasks</div>
+          </div>
+          <div style="text-align:center;padding:1rem;background:#F0FDF4;border-radius:8px;">
+            <div style="font-size:2rem;font-weight:bold;color:#7ED321;">5</div>
+            <div style="font-size:0.875rem;color:#757575;">Completed</div>
+          </div>
+          <div style="text-align:center;padding:1rem;background:#FFF7ED;border-radius:8px;">
+            <div style="font-size:2rem;font-weight:bold;color:#F5A623;">2</div>
+            <div style="font-size:0.875rem;color:#757575;">In Progress</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="student-card">
+        <h3 style="margin-bottom:1.5rem;">🎯 My Learning Journey</h3>
+        <div class="learning-modes-grid">
+          <div onclick="location='after-hours.html?mode=reading'" class="learning-mode-card" style="cursor:pointer;">
+            <span class="learning-mode-icon">📖</span>
+            <span class="learning-mode-label">Reading</span>
+          </div>
+          <div onclick="location='after-hours.html?mode=writing'" class="learning-mode-card" style="cursor:pointer;">
+            <span class="learning-mode-icon">✍️</span>
+            <span class="learning-mode-label">Writing</span>
+          </div>
+          <div onclick="location='after-hours.html?mode=watching'" class="learning-mode-card" style="cursor:pointer;">
+            <span class="learning-mode-icon">📺</span>
+            <span class="learning-mode-label">Watching</span>
+          </div>
+          <div onclick="location='after-hours.html?mode=playing'" class="learning-mode-card" style="cursor:pointer;">
+            <span class="learning-mode-icon">🎮</span>
+            <span class="learning-mode-label">Playing</span>
+          </div>
+          <div onclick="location='after-hours.html?mode=doing'" class="learning-mode-card" style="cursor:pointer;">
+            <span class="learning-mode-icon">🛠️</span>
+            <span class="learning-mode-label">Doing</span>
+          </div>
+          <div onclick="location='after-hours.html?mode=solving'" class="learning-mode-card" style="cursor:pointer;">
+            <span class="learning-mode-icon">🧮</span>
+            <span class="learning-mode-label">Solving</span>
+          </div>
+          <div onclick="location='after-hours.html?mode=debating'" class="learning-mode-card" style="cursor:pointer;">
+            <span class="learning-mode-icon">💬</span>
+            <span class="learning-mode-label">Debating</span>
+          </div>
+          <div onclick="location='after-hours.html?mode=listening'" class="learning-mode-card" style="cursor:pointer;">
+            <span class="learning-mode-icon">🎧</span>
+            <span class="learning-mode-label">Listening</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+        <div class="student-card" onclick="location='assessments.html'" style="cursor:pointer;">
+          <h3>📋 Assessments</h3>
+          <p style="color:#757575;margin:1rem 0;">Take tests and track your performance</p>
+          <span class="badge badge-warning">2 Pending</span>
+        </div>
+        <div class="student-card" onclick="location='progress.html'" style="cursor:pointer;">
+          <h3>📈 Progress</h3>
+          <p style="color:#757575;margin:1rem 0;">View your learning analytics</p>
+          <span class="badge badge-success">85% Average</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

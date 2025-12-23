@@ -21,7 +21,8 @@ async def node_learn_by_solving(state, config: RunnableConfig) -> Dict[str, Any]
     
     req = state.req
     topic = req.get("topic", "Topic")
-    problem_opts = req.get("options", {}).get("problems", {})
+    options = req.get("options") or {}
+    problem_opts = options.get("problems", {})
     count = problem_opts.get("count", 4)
     preferred_types = problem_opts.get("types", ["MCQ", "FITB", "Short"])
     progressive_difficulty = problem_opts.get("progressive_difficulty", True)

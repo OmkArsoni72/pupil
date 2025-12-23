@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Content Generator - PupilTeach</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+  <div class="teacher-app">
+    <aside class="sidebar">
+      <div class="sidebar-header"><div class="logo"><span style="font-size:2rem;">🎓</span> PupilPrep</div></div>
+      <nav class="sidebar-nav">
+        <div class="nav-item" onclick="location='dashboard.html'"><span>📊</span> Dashboard</div>
+        <div class="nav-item active"><span>🤖</span> Content AI</div>
+        <div class="nav-item" onclick="location='assessment.html'"><span>📋</span> Assessments</div>
+        <div class="nav-item" onclick="location='reports.html'"><span>📈</span> Reports</div>
+        <div class="nav-item" onclick="location='timetable.html'"><span>📅</span> Timetable</div>
+        <div class="nav-item" onclick="location='remediation.html'"><span>🎯</span> Remediation</div>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="top-header"><h2 style="margin:0;">AI Content Generator 🤖</h2></header>
+
+      <div class="content-area">
+        <h1>Generate Learning Content</h1>
+        <p style="color:#757575;margin-bottom:2rem;">AI will generate personalized content in 8 learning modes</p>
+
+        <div class="card" style="margin-bottom:2rem;">
+          <div class="input-group">
+            <label class="input-label">Session ID *</label>
+            <input type="text" id="sessionId" class="input-field" placeholder="Enter Session ID" value="test-session-123">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Topic *</label>
+            <input type="text" id="topic" class="input-field" placeholder="e.g., Newton's Laws" value="Newton's Laws of Motion">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Grade</label>
+            <select id="grade" class="input-field">
+              <option>Grade 9</option>
+              <option>Grade 10</option>
+              <option>Grade 11</option>
+              <option>Grade 12</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Subject</label>
+            <select id="subject" class="input-field">
+              <option>Physics</option>
+              <option>Chemistry</option>
+              <option>Biology</option>
+              <option>Mathematics</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:2rem;">
+          <h3 style="margin-bottom:1rem;">Learning Modes (Select All 8)</h3>
+          <div class="learning-modes-grid">
+            <div class="learning-mode-card selected" data-mode="learn_by_reading"><span style="font-size:2.5rem;">📖</span><div style="margin-top:0.5rem;font-weight:600;">Reading</div></div>
+            <div class="learning-mode-card selected" data-mode="learn_by_writing"><span style="font-size:2.5rem;">✍️</span><div style="margin-top:0.5rem;font-weight:600;">Writing</div></div>
+            <div class="learning-mode-card selected" data-mode="learn_by_watching"><span style="font-size:2.5rem;">📺</span><div style="margin-top:0.5rem;font-weight:600;">Watching</div></div>
+            <div class="learning-mode-card selected" data-mode="learn_by_playing"><span style="font-size:2.5rem;">🎮</span><div style="margin-top:0.5rem;font-weight:600;">Playing</div></div>
+            <div class="learning-mode-card selected" data-mode="learn_by_doing"><span style="font-size:2.5rem;">🔬</span><div style="margin-top:0.5rem;font-weight:600;">Doing</div></div>
+            <div class="learning-mode-card selected" data-mode="learn_by_solving"><span style="font-size:2.5rem;">✏️</span><div style="margin-top:0.5rem;font-weight:600;">Solving</div></div>
+            <div class="learning-mode-card selected" data-mode="learn_by_questioning_debating"><span style="font-size:2.5rem;">💬</span><div style="margin-top:0.5rem;font-weight:600;">Debating</div></div>
+            <div class="learning-mode-card selected" data-mode="learn_by_listening_speaking"><span style="font-size:2.5rem;">🎧</span><div style="margin-top:0.5rem;font-weight:600;">Listening</div></div>
+          </div>
+          <button class="btn btn-primary btn-lg" style="margin-top:1.5rem;width:100%;" onclick="generateContent()">✨ Generate Content</button>
+        </div>
+
+        <div id="jobProgress" class="card hidden">
+          <h3>Generating Content... ⏳</h3>
+          <div style="margin:1.5rem 0;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
+              <span>Progress</span>
+              <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-bar">
+              <div id="progressBar" class="progress-bar-fill" style="width:0%;"></div>
+            </div>
+          </div>
+          <div id="jobDetails" style="font-size:0.875rem;color:#757575;"></div>
+          <button class="btn btn-primary" onclick="viewContent()" id="viewBtn" style="margin-top:1rem;" disabled>View Content</button>
+        </div>
+
+        <div id="contentResult" class="card hidden">
+          <h3>✅ Content Generated Successfully!</h3>
+          <div style="margin-top:1rem;padding:1rem;background:#F1F8E9;border-radius:8px;">
+            <p>All 8 learning modes have been generated and are ready for students.</p>
+            <div style="margin-top:1rem;display:flex;gap:1rem;">
+              <button class="btn btn-primary">Assign to Students</button>
+              <button class="btn btn-outline">Download</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script>
+    document.querySelectorAll('.learning-mode-card').forEach(card => {
+      card.onclick = () => card.classList.toggle('selected');
+    });
+
+    async function generateContent() {
+      const sessionId = document.getElementById('sessionId').value;
+      const topic = document.getElementById('topic').value;
+      if (!sessionId || !topic) return showToast('Please fill required fields', 'error');
+
+      const modes = Array.from(document.querySelectorAll('.learning-mode-card.selected')).map(c => c.dataset.mode);
+      
+      try {
+        document.getElementById('jobProgress').classList.remove('hidden');
+        const response = await API.generateAHS({
+          teacher_class_id: "class_001",
+          session_id: sessionId,
+          duration_minutes: 60,
+          grade_level: document.getElementById('grade').value,
+          curriculum_goal: `Master ${topic} - ${document.getElementById('subject').value}`,
+          topic: topic,
+          context_refs: {
+            lesson_script_id: null,
+            in_class_question_ids: null,
+            recent_session_ids: [sessionId],
+            recent_performance: null
+          },
+          learning_gaps: [],
+          modes: modes.length > 0 ? modes : ["learn_by_reading", "learn_by_writing"],
+          options: null
+        });
+        
+        showToast('Content generation started!', 'success');
+        pollJobStatus(response.job_id, (status) => {
+          const percent = Math.min((status.progress || 0) * 100, 100);
+          document.getElementById('progressPercent').textContent = percent.toFixed(0) + '%';
+          document.getElementById('progressBar').style.width = percent + '%';
+          document.getElementById('jobDetails').textContent = status.details || 'Processing...';
+          
+          if (status.status === 'completed') {
+            document.getElementById('viewBtn').disabled = false;
+            document.getElementById('contentResult').classList.remove('hidden');
+            showToast('Content generated successfully!', 'success');
+          } else if (status.status === 'failed') {
+            showToast('Generation failed: ' + status.error, 'error');
+          }
+        });
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    function viewContent() {
+      showToast('Opening content viewer...', 'info');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timetable - PupilTeach</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+  <div class="teacher-app">
+    <aside class="sidebar">
+      <div class="sidebar-header"><div class="logo"><span style="font-size:2rem;">🎓</span> PupilPrep</div></div>
+      <nav class="sidebar-nav">
+        <div class="nav-item" onclick="location='dashboard.html'"><span>📊</span> Dashboard</div>
+        <div class="nav-item" onclick="location='content-generator.html'"><span>🤖</span> Content AI</div>
+        <div class="nav-item" onclick="location='assessment.html'"><span>📋</span> Assessments</div>
+        <div class="nav-item" onclick="location='reports.html'"><span>📈</span> Reports</div>
+        <div class="nav-item active"><span>📅</span> Timetable</div>
+        <div class="nav-item" onclick="location='remediation.html'"><span>🎯</span> Remediation</div>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="top-header"><h2 style="margin:0;">Timetable Management 📅</h2></header>
+
+      <div class="content-area">
+        <h1>Today's Schedule</h1>
+        
+        <div class="card" style="margin-bottom:2rem;">
+          <h3>Get Daily Schedule</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
+            <div>
+              <label class="input-label">Date</label>
+              <input type="date" id="scheduleDate" class="input-field" value="2025-12-23">
+            </div>
+            <div>
+              <label class="input-label">Teacher ID</label>
+              <input type="text" id="teacherId" class="input-field" placeholder="12" value="12">
+            </div>
+            <div>
+              <label class="input-label">Class ID</label>
+              <input type="text" id="classId" class="input-field" placeholder="class_001" value="class_001">
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="loadSchedule()" style="margin-top:1rem;width:100%;">Load Schedule</button>
+        </div>
+
+        <div id="scheduleData" class="hidden">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;" id="scheduleGrid"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script>
+    async function loadSchedule() {
+      const date = document.getElementById('scheduleDate').value;
+      const teacherId = document.getElementById('teacherId').value;
+      const classId = document.getElementById('classId').value;
+
+      try {
+        const schedule = await API.getDailySchedule({ day: date, teacher_id: teacherId, class_id: classId });
+        displaySchedule(schedule);
+        showToast('Schedule loaded!', 'success');
+      } catch (error) {}
+    }
+
+    function displaySchedule(events) {
+      const grid = document.getElementById('scheduleGrid');
+      grid.innerHTML = events?.map(e => `
+        <div class="card">
+          <div style="font-weight:600;margin-bottom:0.5rem;">${e.title || 'Class'}</div>
+          <div style="font-size:0.875rem;color:#757575;">${e.time || 'Time'}</div>
+          <span class="badge badge-primary" style="margin-top:0.5rem;">${e.subject || 'Subject'}</span>
+        </div>
+      `).join('') || '<div class="card"><p>No schedule found for this date</p></div>';
+      document.getElementById('scheduleData').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>

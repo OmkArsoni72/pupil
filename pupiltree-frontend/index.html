@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PupilPrep - AI Education Platform</title>
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <style>
+    .landing { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #4A90E2, #357ABD); padding: 2rem; }
+    .landing-card { background: white; border-radius: 16px; padding: 3rem; max-width: 900px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center; }
+    .logo-big { font-size: 4rem; margin-bottom: 1rem; }
+    .app-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; margin-top: 2rem; }
+    .app-card { padding: 2rem; border: 3px solid #E0E0E0; border-radius: 12px; cursor: pointer; transition: all 0.3s; text-decoration: none; color: inherit; }
+    .app-card:hover { border-color: #4A90E2; transform: translateY(-4px); box-shadow: 0 8px 20px rgba(74,144,226,0.2); }
+    .app-icon { font-size: 3rem; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="landing">
+    <div class="landing-card">
+      <div class="logo-big">🎓</div>
+      <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">PupilPrep</h1>
+      <p style="color: #757575; font-size: 1.25rem; margin-bottom: 2rem;">AI-Powered Personalized Learning Platform</p>
+      
+      <div class="app-cards">
+        <a href="teacher/dashboard.html" class="app-card">
+          <div class="app-icon">👩‍🏫</div>
+          <h3>PupilTeach</h3>
+          <p style="color: #757575; font-size: 0.9rem;">Teacher Dashboard</p>
+        </a>
+        <a href="student/home.html" class="app-card">
+          <div class="app-icon">🎒</div>
+          <h3>PupilLearn</h3>
+          <p style="color: #757575; font-size: 0.9rem;">Student Portal</p>
+        </a>
+      </div>
+      
+      <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #E0E0E0;">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; text-align: center;">
+          <div>
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🤖</div>
+            <p style="font-size: 0.875rem; color: #757575;">AI Content<br>8 Learning Modes</p>
+          </div>
+          <div>
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📊</div>
+            <p style="font-size: 0.875rem; color: #757575;">Real-time Analytics<br>Gap Detection</p>
+          </div>
+          <div>
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎯</div>
+            <p style="font-size: 0.875rem; color: #757575;">Personalized Remediation<br>Adaptive Learning</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
