@@ -37,3 +37,9 @@ dist/
 *.egg-info
 *.sublime-project
 *.sublime-workspace
+
+# Google Cloud credentials
+*.json
+!package.json
+!tsconfig.json
+services/ai/helper/*.json
