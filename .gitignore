@@ -41,6 +41,6 @@ dist/
 # Google Cloud credentials
 *.json
 !package.json
+!vercel.json
 !tsconfig.json
 services/ai/helper/*.json
-*.json
