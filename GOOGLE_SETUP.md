@@ -5,7 +5,7 @@
 ### 1. Get Gemini API Key
 
 ```bash
-# Visit: https://ai.google.dev
+# Visit: https://ai.google.dev   
 # Click "Get API Key" 
 # Create new API key in Google AI Studio
 # Copy and paste below:
