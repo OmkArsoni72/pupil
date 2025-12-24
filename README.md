@@ -1,4 +1,4 @@
-# PupilPrep Backend
+   # PupilPrep Backend
 
 Welcome to the PupilPrep backend. This repository powers the educator (PupilTeach) and student (PupilLearn) experiences with APIs, AI pipelines, RAG retrieval, real-time interactions, and orchestration for remediation flows.
 

@@ -43,3 +43,4 @@ dist/
 !package.json
 !tsconfig.json
 services/ai/helper/*.json
+*.json

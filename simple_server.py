@@ -23,6 +23,8 @@ MOCK_SESSIONS = [
     {"session_id": "sess_002", "topic": "Cell Structure", "grade": 10, "subject": "Biology", "status": "active"}
 ]
 
+MOCK_USERS = {}  # Store registered users
+
 MOCK_CLASS_REPORT = {
     "class_average": 85.5,
     "total_students": 45,
@@ -34,6 +36,82 @@ MOCK_CLASS_REPORT = {
         {"name": "Priya Patel", "roll_no": 3, "average": 91, "attendance": 98, "gaps": 1}
     ]
 }
+
+# Authentication Routes
+@app.post("/api/v1/users/register")
+async def register(request):
+    try:
+        data = await request.json()
+        email = data.get("email")
+        name = data.get("name")
+        password = data.get("password")
+        role = data.get("role", "student")
+        
+        if email in MOCK_USERS:
+            return JSONResponse({"message": "User already exists"}, status_code=400)
+        
+        user = {
+            "_id": f"user_{len(MOCK_USERS) + 1}",
+            "email": email,
+            "name": name,
+            "role": role,
+            "profile": {"avatar": None, "phone": None, "grade": None, "section": None},
+            "gamification": {"points": 0, "level": 1, "badges": []}
+        }
+        
+        MOCK_USERS[email] = {"password": password, "user": user}
+        
+        return {
+            "access_token": f"token_{email}",
+            "token_type": "bearer",
+            "user": user
+        }
+    except Exception as e:
+        return JSONResponse({"message": str(e)}, status_code=500)
+
+@app.post("/api/v1/users/login")
+async def login(request):
+    try:
+        data = await request.json()
+        email = data.get("email")
+        password = data.get("password")
+        
+        if email not in MOCK_USERS:
+            return JSONResponse({"message": "Invalid credentials"}, status_code=401)
+        
+        user_data = MOCK_USERS[email]
+        if user_data["password"] != password:
+            return JSONResponse({"message": "Invalid credentials"}, status_code=401)
+        
+        return {
+            "access_token": f"token_{email}",
+            "token_type": "bearer",
+            "user": user_data["user"]
+        }
+    except Exception as e:
+        return JSONResponse({"message": str(e)}, status_code=500)
+
+@app.get("/api/v1/users/me")
+async def get_current_user(authorization: str = None):
+    # Mock implementation - just return a default user
+    return {
+        "_id": "user_1",
+        "email": "test@example.com",
+        "name": "Test User",
+        "role": "student",
+        "profile": {"avatar": None, "phone": None, "grade": "10", "section": "A"},
+        "gamification": {"points": 250, "level": 3, "badges": ["Quick Learner", "Problem Solver"]}
+    }
+
+@app.get("/api/v1/teacher/classes")
+async def get_teacher_classes():
+    return {
+        "classes": [
+            {"class_id": "class_1", "name": "Grade 10 - Section A", "subject": "Physics", "students_count": 45},
+            {"class_id": "class_2", "name": "Grade 10 - Section B", "subject": "Chemistry", "students_count": 42},
+            {"class_id": "class_3", "name": "Grade 11 - Section A", "subject": "Biology", "students_count": 40}
+        ]
+    }
 
 # Content Generation Routes
 @app.post("/api/v1/contentGenerationForAHS")
@@ -128,6 +206,6 @@ async def health():
     return {"status": "healthy"}
 
 if __name__ == "__main__":
-    print("🚀 Starting PupilPrep Mock API Server on http://localhost:8080")
-    print("📋 API Docs: http://localhost:8080/docs")
+    print("Starting PupilPrep Mock API Server on http://localhost:8080")
+    print("API Docs: http://localhost:8080/docs")
     uvicorn.run(app, host="0.0.0.0", port=8080, log_level="info")
