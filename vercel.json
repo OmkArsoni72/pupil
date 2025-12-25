@@ -1,24 +1,13 @@
 {
   "version": 2,
+  "root": "frontend",
   "buildCommand": "npm run build",
-  "outputDirectory": "frontend/.next",
+  "outputDirectory": ".next",
   "installCommand": "npm install",
+  "framework": "nextjs",
   "env": {
     "NEXT_PUBLIC_API_URL": "@next_public_api_url",
     "NEXT_PUBLIC_GEMINI_API_KEY": "@next_public_gemini_api_key"
   },
-  "regions": ["iad1"],
-  "framework": "nextjs",
-  "builds": [
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/next"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "frontend/$1"
-    }
-  ]
+  "regions": ["iad1"]
 }
